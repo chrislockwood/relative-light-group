@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import logging
-import time
 from collections.abc import Callable, Iterator
 from itertools import groupby
 from math import atan2, cos, degrees, radians, sin
@@ -71,31 +68,3 @@ def reduce_attribute(
 def coerce_in(value: float | int, minimum: float | int, maximum: float | int) -> int:
     """Coerce value into the range [minimum, maximum]."""
     return int(max(minimum, min(value, maximum)))
-
-
-# #region agent log
-_RLG_DEBUG_LOG_PATH = "/Users/felipe/Repos/relative-light-group/.cursor/debug-71ea80.log"
-_rlg_debug_logger = logging.getLogger(__name__)
-
-
-def rlg_debug_log(
-    location: str, message: str, data: dict[str, Any], hypothesis_id: str
-) -> None:
-    """Append one NDJSON line for debug-mode analysis; fallback to HA log in Docker."""
-    payload = {
-        "sessionId": "71ea80",
-        "timestamp": int(time.time() * 1000),
-        "location": location,
-        "message": message,
-        "data": data,
-        "hypothesisId": hypothesis_id,
-    }
-    line = json.dumps(payload, default=str) + "\n"
-    try:
-        with open(_RLG_DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
-            f.write(line)
-    except OSError:
-        _rlg_debug_logger.info("RLG_DEBUG_NDJSON %s", line.strip())
-
-
-# #endregion

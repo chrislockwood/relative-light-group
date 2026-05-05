@@ -34,7 +34,6 @@ from .const import (
 from .entity import GroupEntity
 from .light import async_create_preview_light
 from .services import validate_member_entities
-from .util import rlg_debug_log
 
 
 def light_config_schema() -> vol.Schema:
@@ -141,19 +140,6 @@ async def _async_validate_entities(
                 registry, parent.config_entry.entry_id
             )
         }
-
-    # #region agent log
-    rlg_debug_log(
-        "config_flow:_async_validate_entities",
-        "entry",
-        {
-            "hass_ok": hass is not None,
-            "parent_type": type(parent).__name__,
-            "entity_count": len(list(entities)) if entities else 0,
-        },
-        "A",
-    )
-    # #endregion
 
     try:
         validated = validate_member_entities(
