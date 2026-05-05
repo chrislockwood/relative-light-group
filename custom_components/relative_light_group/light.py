@@ -56,6 +56,7 @@ from .const import (
 )
 from .entity import GroupEntity
 from .util import (
+    agent_debug_log,
     coerce_in,
     find_state_attributes,
     mean_circle,
@@ -219,6 +220,25 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         self._attr_color_mode = ColorMode.UNKNOWN
         self._attr_supported_color_modes = {ColorMode.ONOFF}
+
+    @callback
+    def async_defer_or_update_ha_state(self) -> None:
+        """Update group state from members; log brightness before/after parent update."""
+        if not self.hass.is_running:
+            return
+        bri_before = self._attr_brightness
+        super().async_defer_or_update_ha_state()
+        # #region agent log
+        agent_debug_log(
+            "light:async_defer_or_update_ha_state",
+            "after_defer",
+            {
+                "brightness_before": bri_before,
+                "brightness_after": self._attr_brightness,
+            },
+            "H2",
+        )
+        # #endregion
 
     def _get_on_lights(self) -> list:
         """Get list of currently on light states."""
@@ -621,9 +641,23 @@ class RelativeLightGroup(GroupEntity, LightEntity):
     @callback
     def async_update_group_state(self) -> None:
         """Query all members and determine the light group state."""
-        if self._debounce_enabled and (
-            time.monotonic() - self._last_command_time < self._debounce_time / 1000
-        ):
+        now_m = time.monotonic()
+        debounce_s = self._debounce_time / 1000
+        delta_ms = (now_m - self._last_command_time) * 1000
+        if self._debounce_enabled and (now_m - self._last_command_time < debounce_s):
+            # #region agent log
+            agent_debug_log(
+                "light:async_update_group_state",
+                "debounce_skip",
+                {
+                    "delta_ms": round(delta_ms, 1),
+                    "debounce_ms": self._debounce_time,
+                    "restore_individual": self._restore_individual_brightness,
+                    "remembered_brightness_len": len(self._remembered_brightness),
+                },
+                "H1",
+            )
+            # #endregion
             return
 
         self._update_assumed_state_from_members()
@@ -650,6 +684,21 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         # Brightness is calculated only from ON lights
         self._attr_brightness = reduce_attribute(on_states, ATTR_BRIGHTNESS)
+        # #region agent log
+        agent_debug_log(
+            "light:async_update_group_state",
+            "brightness_recomputed",
+            {
+                "attr_brightness": self._attr_brightness,
+                "member_brightness": {
+                    s.entity_id: s.attributes.get(ATTR_BRIGHTNESS) for s in on_states
+                },
+                "restore_individual": self._restore_individual_brightness,
+                "remembered_brightness_len": len(self._remembered_brightness),
+            },
+            "H5",
+        )
+        # #endregion
 
         # Update base brightness from external changes only.
         # Check each light's state context to see if it was driven by a group command.

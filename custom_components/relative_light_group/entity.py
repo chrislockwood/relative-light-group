@@ -6,6 +6,7 @@ from abc import abstractmethod
 from collections.abc import Callable, Mapping
 from typing import Any
 
+from homeassistant.components.light import ATTR_BRIGHTNESS
 from homeassistant.const import (
     ATTR_ASSUMED_STATE,
     ATTR_ENTITY_ID,
@@ -21,6 +22,8 @@ from homeassistant.core import (
 from homeassistant.helpers import start
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_state_change_event
+
+from .util import agent_debug_log
 
 
 class GroupEntity(Entity):
@@ -73,6 +76,24 @@ class GroupEntity(Entity):
             event: Event[EventStateChangedData],
         ) -> None:
             """Handle child updates."""
+            # #region agent log
+            old_s = event.data.get("old_state")
+            new_s = event.data.get("new_state")
+            agent_debug_log(
+                "entity:async_state_changed_listener",
+                "member_state_changed",
+                {
+                    "entity_id": event.data.get("entity_id"),
+                    "old_bri": old_s.attributes.get(ATTR_BRIGHTNESS)
+                    if old_s
+                    else None,
+                    "new_bri": new_s.attributes.get(ATTR_BRIGHTNESS)
+                    if new_s
+                    else None,
+                },
+                "H4",
+            )
+            # #endregion
             self.async_set_context(event.context)
             self.async_update_supported_features(
                 event.data["entity_id"], event.data["new_state"]

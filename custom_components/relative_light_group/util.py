@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import json
+import logging
+import time
 from collections.abc import Callable, Iterator
 from itertools import groupby
 from math import atan2, cos, degrees, radians, sin
 from typing import Any
 
 from homeassistant.core import State
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def find_state_attributes(states: list[State], key: str) -> Iterator[Any]:
@@ -68,3 +73,35 @@ def reduce_attribute(
 def coerce_in(value: float | int, minimum: float | int, maximum: float | int) -> int:
     """Coerce value into the range [minimum, maximum]."""
     return int(max(minimum, min(value, maximum)))
+
+
+# #region agent log
+_AGENT_DEBUG_LOG = "/Users/felipe/Repos/relative-light-group/.cursor/debug-71ea80.log"
+
+
+def agent_debug_log(
+    location: str, message: str, data: dict[str, Any], hypothesis_id: str
+) -> None:
+    """Append one NDJSON line for debug-mode analysis."""
+    line = (
+        json.dumps(
+            {
+                "sessionId": "71ea80",
+                "timestamp": int(time.time() * 1000),
+                "location": location,
+                "message": message,
+                "data": data,
+                "hypothesisId": hypothesis_id,
+            },
+            default=str,
+        )
+        + "\n"
+    )
+    try:
+        with open(_AGENT_DEBUG_LOG, "a", encoding="utf-8") as f:
+            f.write(line)
+    except OSError:
+        _LOGGER.info("RLG_DEBUG_NDJSON %s", line.strip())
+
+
+# #endregion
