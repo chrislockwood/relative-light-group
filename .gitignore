@@ -3,8 +3,14 @@
 .AppleDouble
 .LSOverride
 
-# Thumbnails
+# Thumbnails / AppleDouble resource forks
 ._*
+
+# iCloud Drive placeholders (file not downloaded locally)
+*.icloud
+
+# Finder per-folder “localized” name marker
+.localized
 
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100
