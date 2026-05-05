@@ -34,6 +34,7 @@ from .const import (
 from .entity import GroupEntity
 from .light import async_create_preview_light
 from .services import validate_member_entities
+from .util import rlg_debug_log
 
 
 def light_config_schema() -> vol.Schema:
@@ -129,10 +130,11 @@ async def _async_validate_entities(
     """
     entities = user_input.get(CONF_ENTITIES, [])
 
+    hass = handler.parent_handler.hass
     own_entity_ids: set[str] = set()
     parent = handler.parent_handler
     if isinstance(parent, SchemaOptionsFlowHandler):
-        registry = er.async_get(handler.hass)
+        registry = er.async_get(hass)
         own_entity_ids = {
             entry.entity_id
             for entry in er.async_entries_for_config_entry(
@@ -140,9 +142,22 @@ async def _async_validate_entities(
             )
         }
 
+    # #region agent log
+    rlg_debug_log(
+        "config_flow:_async_validate_entities",
+        "entry",
+        {
+            "hass_ok": hass is not None,
+            "parent_type": type(parent).__name__,
+            "entity_count": len(list(entities)) if entities else 0,
+        },
+        "A",
+    )
+    # #endregion
+
     try:
         validated = validate_member_entities(
-            handler.hass, list(entities), own_entity_ids
+            hass, list(entities), own_entity_ids
         )
     except ServiceValidationError as err:
         raise SchemaFlowError(err.translation_key or "invalid_entities") from err
