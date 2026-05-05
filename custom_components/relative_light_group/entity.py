@@ -6,7 +6,6 @@ from abc import abstractmethod
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from homeassistant.components.light import ATTR_BRIGHTNESS
 from homeassistant.const import (
     ATTR_ASSUMED_STATE,
     ATTR_ENTITY_ID,
@@ -22,8 +21,6 @@ from homeassistant.core import (
 from homeassistant.helpers import start
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_state_change_event
-
-from .util import agent_debug_log
 
 
 class GroupEntity(Entity):
@@ -76,24 +73,6 @@ class GroupEntity(Entity):
             event: Event[EventStateChangedData],
         ) -> None:
             """Handle child updates."""
-            # #region agent log
-            old_s = event.data.get("old_state")
-            new_s = event.data.get("new_state")
-            agent_debug_log(
-                "entity:async_state_changed_listener",
-                "member_state_changed",
-                {
-                    "entity_id": event.data.get("entity_id"),
-                    "old_bri": old_s.attributes.get(ATTR_BRIGHTNESS)
-                    if old_s
-                    else None,
-                    "new_bri": new_s.attributes.get(ATTR_BRIGHTNESS)
-                    if new_s
-                    else None,
-                },
-                "H4",
-            )
-            # #endregion
             self.async_set_context(event.context)
             self.async_update_supported_features(
                 event.data["entity_id"], event.data["new_state"]
@@ -110,22 +89,26 @@ class GroupEntity(Entity):
     @callback
     def _update_at_start(self, _: HomeAssistant) -> None:
         """Update the group state at start."""
-        self.async_update_group_state()
-        self.async_write_ha_state()
+        if self.async_update_group_state():
+            self.async_write_ha_state()
 
     @callback
     def async_defer_or_update_ha_state(self) -> None:
-        """Only update once at start."""
+        """Refresh derived state from members; write only if the update ran."""
         if not self.hass.is_running:
             return
 
-        self.async_update_group_state()
-        self.async_write_ha_state()
+        if self.async_update_group_state():
+            self.async_write_ha_state()
 
     @abstractmethod
     @callback
-    def async_update_group_state(self) -> None:
-        """Abstract method to update the entity."""
+    def async_update_group_state(self) -> bool:
+        """Refresh state from member entities.
+
+        Return False if the update was skipped (e.g. optimistic debounce);
+        callers must not call async_write_ha_state() in that case.
+        """
 
     @callback
     def _update_assumed_state_from_members(self) -> None:

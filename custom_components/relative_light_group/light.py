@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, deque
+from datetime import datetime
 import itertools
 import logging
 import time
@@ -42,9 +43,10 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 
 from .const import (
     CONF_ALL,
@@ -56,7 +58,6 @@ from .const import (
 )
 from .entity import GroupEntity
 from .util import (
-    agent_debug_log,
     coerce_in,
     find_state_attributes,
     mean_circle,
@@ -217,28 +218,52 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         self._debounce_enabled = debounce_enabled
         self._debounce_time = debounce_time
         self._last_command_time = 0.0
+        self._debounce_sync_unsub: CALLBACK_TYPE | None = None
 
         self._attr_color_mode = ColorMode.UNKNOWN
         self._attr_supported_color_modes = {ColorMode.ONOFF}
 
+    async def async_added_to_hass(self) -> None:
+        """Register listeners and cancel debounce sync on remove."""
+        await super().async_added_to_hass()
+
+        def _cancel_debounce_sync() -> None:
+            self._async_cancel_debounce_sync()
+
+        self.async_on_remove(_cancel_debounce_sync)
+
     @callback
-    def async_defer_or_update_ha_state(self) -> None:
-        """Update group state from members; log brightness before/after parent update."""
-        if not self.hass.is_running:
+    def _async_cancel_debounce_sync(self) -> None:
+        """Cancel a pending post-debounce member sync."""
+        if self._debounce_sync_unsub is not None:
+            self._debounce_sync_unsub()
+            self._debounce_sync_unsub = None
+
+    @callback
+    def _async_schedule_member_sync_after_debounce(self) -> None:
+        """When member updates are ignored during debounce, sync once it ends."""
+        if self._debounce_sync_unsub is not None:
             return
-        bri_before = self._attr_brightness
-        super().async_defer_or_update_ha_state()
-        # #region agent log
-        agent_debug_log(
-            "light:async_defer_or_update_ha_state",
-            "after_defer",
-            {
-                "brightness_before": bri_before,
-                "brightness_after": self._attr_brightness,
-            },
-            "H2",
+        remaining = self._debounce_time / 1000 - (
+            time.monotonic() - self._last_command_time
         )
-        # #endregion
+        if remaining <= 0:
+            if self.async_update_group_state():
+                self.async_write_ha_state()
+            return
+
+        @callback
+        def _sync(_dt: datetime) -> None:
+            self._debounce_sync_unsub = None
+            if self._debounce_enabled and (
+                time.monotonic() - self._last_command_time < self._debounce_time / 1000
+            ):
+                self._async_schedule_member_sync_after_debounce()
+                return
+            if self.async_update_group_state():
+                self.async_write_ha_state()
+
+        self._debounce_sync_unsub = async_call_later(self.hass, remaining, _sync)
 
     def _get_on_lights(self) -> list:
         """Get list of currently on light states."""
@@ -427,6 +452,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._last_command_contexts.append(self._context.id)
 
         self._last_command_time = time.monotonic()
+        self._async_cancel_debounce_sync()
 
         data = {
             key: value for key, value in kwargs.items() if key in FORWARDED_ATTRIBUTES
@@ -607,6 +633,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._last_command_contexts.append(self._context.id)
 
         self._last_command_time = time.monotonic()
+        self._async_cancel_debounce_sync()
         self._attr_is_on = False
 
         # Remember which lights are on before turning off
@@ -639,27 +666,15 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         )
 
     @callback
-    def async_update_group_state(self) -> None:
+    def async_update_group_state(self) -> bool:
         """Query all members and determine the light group state."""
         now_m = time.monotonic()
         debounce_s = self._debounce_time / 1000
-        delta_ms = (now_m - self._last_command_time) * 1000
         if self._debounce_enabled and (now_m - self._last_command_time < debounce_s):
-            # #region agent log
-            agent_debug_log(
-                "light:async_update_group_state",
-                "debounce_skip",
-                {
-                    "delta_ms": round(delta_ms, 1),
-                    "debounce_ms": self._debounce_time,
-                    "restore_individual": self._restore_individual_brightness,
-                    "remembered_brightness_len": len(self._remembered_brightness),
-                },
-                "H1",
-            )
-            # #endregion
-            return
+            self._async_schedule_member_sync_after_debounce()
+            return False
 
+        self._async_cancel_debounce_sync()
         self._update_assumed_state_from_members()
 
         states = [
@@ -684,21 +699,6 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         # Brightness is calculated only from ON lights
         self._attr_brightness = reduce_attribute(on_states, ATTR_BRIGHTNESS)
-        # #region agent log
-        agent_debug_log(
-            "light:async_update_group_state",
-            "brightness_recomputed",
-            {
-                "attr_brightness": self._attr_brightness,
-                "member_brightness": {
-                    s.entity_id: s.attributes.get(ATTR_BRIGHTNESS) for s in on_states
-                },
-                "restore_individual": self._restore_individual_brightness,
-                "remembered_brightness_len": len(self._remembered_brightness),
-            },
-            "H5",
-        )
-        # #endregion
 
         # Update base brightness from external changes only.
         # Check each light's state context to see if it was driven by a group command.
@@ -784,3 +784,4 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         for support in find_state_attributes(states, ATTR_SUPPORTED_FEATURES):
             self._attr_supported_features |= support
         self._attr_supported_features &= SUPPORT_GROUP_LIGHT
+        return True
