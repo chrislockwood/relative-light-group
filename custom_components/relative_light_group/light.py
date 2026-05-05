@@ -52,6 +52,7 @@ from .const import (
     CONF_DEBOUNCE_TIME,
     CONF_REMEMBER_BRIGHTNESS,
     CONF_REMEMBER_ON_STATE,
+    CONF_RESTORE_INDIVIDUAL_BRIGHTNESS,
 )
 from .entity import GroupEntity
 from .util import (
@@ -121,6 +122,9 @@ async def async_setup_entry(
     )
     mode = config_entry.options.get(CONF_ALL, False)
     remember_on_state = config_entry.options.get(CONF_REMEMBER_ON_STATE, False)
+    restore_individual_brightness = config_entry.options.get(
+        CONF_RESTORE_INDIVIDUAL_BRIGHTNESS, False
+    )
     remember_brightness = config_entry.options.get(CONF_REMEMBER_BRIGHTNESS, False)
     debounce_enabled = config_entry.options.get(CONF_DEBOUNCE_ENABLED, True)
     debounce_time = config_entry.options.get(CONF_DEBOUNCE_TIME, 2000)
@@ -133,6 +137,7 @@ async def async_setup_entry(
                 entities,
                 mode,
                 remember_on_state,
+                restore_individual_brightness,
                 remember_brightness,
                 debounce_enabled,
                 debounce_time,
@@ -152,6 +157,7 @@ def async_create_preview_light(
         validated_config[CONF_ENTITIES],
         validated_config.get(CONF_ALL, False),
         validated_config.get(CONF_REMEMBER_ON_STATE, False),
+        validated_config.get(CONF_RESTORE_INDIVIDUAL_BRIGHTNESS, False),
         validated_config.get(CONF_REMEMBER_BRIGHTNESS, False),
         validated_config.get(CONF_DEBOUNCE_ENABLED, True),
         validated_config.get(CONF_DEBOUNCE_TIME, 2000),
@@ -166,6 +172,8 @@ class RelativeLightGroup(GroupEntity, LightEntity):
     Turn on/off affects all lights (with optional remember behavior).
     When remember_brightness is enabled, base brightness ratios are preserved
     even after hitting brightness limits (0% or 100%).
+    When restore_individual_brightness is enabled, turning the group off stores
+    each on member's brightness; turning the group back on reapplies it.
     """
 
     _attr_available = False
@@ -181,6 +189,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         entity_ids: list[str],
         mode: bool | None,
         remember_on_state: bool,
+        restore_individual_brightness: bool,
         remember_brightness: bool,
         debounce_enabled: bool,
         debounce_time: int,
@@ -196,6 +205,9 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         self._remember_on_state = remember_on_state
         self._remembered_lights: list[str] | None = None
+
+        self._restore_individual_brightness = restore_individual_brightness
+        self._remembered_brightness: dict[str, int] = {}
 
         self._remember_brightness = remember_brightness
         self._base_brightness: dict[str, int] = {}
@@ -312,6 +324,71 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 context=self._context,
             )
 
+    async def _async_turn_on_targets_from_group_off(
+        self, data: dict[str, Any], target_entity_ids: list[str]
+    ) -> None:
+        """Turn on targets after the group was off; optionally restore saved brightness per member."""
+        use_restore = (
+            self._restore_individual_brightness
+            and ATTR_BRIGHTNESS not in data
+            and bool(self._remembered_brightness)
+        )
+        visual_data = {
+            key: value
+            for key, value in data.items()
+            if key in VISUAL_ATTRIBUTES or key == ATTR_TRANSITION
+        }
+        if use_restore:
+            by_brightness: dict[int, list[str]] = {}
+            no_stored_brightness: list[str] = []
+            for eid in target_entity_ids:
+                stored = self._remembered_brightness.get(eid)
+                if stored is not None:
+                    bri = coerce_in(int(stored), BRIGHTNESS_MIN, BRIGHTNESS_MAX)
+                    by_brightness.setdefault(bri, []).append(eid)
+                else:
+                    no_stored_brightness.append(eid)
+            for brightness, eids in by_brightness.items():
+                call_data = {
+                    **visual_data,
+                    ATTR_BRIGHTNESS: brightness,
+                    ATTR_ENTITY_ID: eids,
+                }
+                if ATTR_TRANSITION in data:
+                    call_data[ATTR_TRANSITION] = data[ATTR_TRANSITION]
+                _LOGGER.debug("Restore brightness turn_on: %s", call_data)
+                await self.hass.services.async_call(
+                    light.DOMAIN,
+                    SERVICE_TURN_ON,
+                    call_data,
+                    blocking=True,
+                    context=self._context,
+                )
+            if no_stored_brightness:
+                call_data = {**visual_data, ATTR_ENTITY_ID: no_stored_brightness}
+                if ATTR_TRANSITION in data:
+                    call_data[ATTR_TRANSITION] = data[ATTR_TRANSITION]
+                _LOGGER.debug("Turn on without stored brightness: %s", call_data)
+                await self.hass.services.async_call(
+                    light.DOMAIN,
+                    SERVICE_TURN_ON,
+                    call_data,
+                    blocking=True,
+                    context=self._context,
+                )
+            return
+
+        data[ATTR_ENTITY_ID] = target_entity_ids
+        _LOGGER.debug("Turning on group (was off): %s", data)
+
+        await self.hass.services.async_call(
+            light.DOMAIN,
+            SERVICE_TURN_ON,
+            data,
+            blocking=True,
+            context=self._context,
+        )
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Forward the turn_on command with relative brightness control.
 
@@ -319,6 +396,8 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         - If the group is OFF (being turned on):
           - With remember_on_state: restore only previously-on lights
           - Without remember_on_state: turn on all lights
+          - With restore_individual_brightness (and no explicit group brightness):
+            reapply each target's saved brightness from before the last group off
         - If brightness is changing:
           - With remember_brightness: use base-relative algorithm
           - Without remember_brightness: use standard relative algorithm
@@ -332,6 +411,8 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         data = {
             key: value for key, value in kwargs.items() if key in FORWARDED_ATTRIBUTES
         }
+
+        was_off = not self._attr_is_on
 
         # Optimistic state update
         self._attr_is_on = True
@@ -347,30 +428,15 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         on_lights = self._get_on_lights()
         has_brightness = ATTR_BRIGHTNESS in data
         has_visual_attrs = any(key in data for key in VISUAL_ATTRIBUTES)
-        group_is_on = self._attr_is_on
 
-        # Case 1: Group is currently OFF → turning on
-        if not group_is_on:
+        # Case 1: Group was OFF → turning on
+        if was_off:
             if self._remember_on_state and self._remembered_lights:
                 target_entity_ids = self._remembered_lights
             else:
                 target_entity_ids = self._entity_ids
 
-            # If explicit brightness is commended while turning on the group from off,
-            # clear the previous base brightness so they start syncing from this new uniform state.
-            if has_brightness and self._remember_brightness:
-                self._base_brightness.clear()
-
-            data[ATTR_ENTITY_ID] = target_entity_ids
-            _LOGGER.debug("Turning on group (was off): %s", data)
-
-            await self.hass.services.async_call(
-                light.DOMAIN,
-                SERVICE_TURN_ON,
-                data,
-                blocking=True,
-                context=self._context,
-            )
+            await self._async_turn_on_targets_from_group_off(data, target_entity_ids)
             return
 
         # Case 2: Group is ON and brightness is being changed
@@ -527,6 +593,17 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         if self._remember_on_state:
             self._remembered_lights = self._get_on_entity_ids()
             _LOGGER.debug("Remembered on lights: %s", self._remembered_lights)
+
+        # Snapshot brightness from current HA state before members change (avoids races).
+        if self._restore_individual_brightness:
+            self._remembered_brightness = {}
+            for state in self._get_on_lights():
+                bri = state.attributes.get(ATTR_BRIGHTNESS)
+                if bri is not None:
+                    self._remembered_brightness[state.entity_id] = int(bri)
+            _LOGGER.debug("Remembered brightness: %s", self._remembered_brightness)
+        else:
+            self._remembered_brightness.clear()
 
         data = {ATTR_ENTITY_ID: self._entity_ids}
 

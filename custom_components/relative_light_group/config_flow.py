@@ -25,6 +25,7 @@ from .const import (
     CONF_HIDE_MEMBERS,
     CONF_REMEMBER_BRIGHTNESS,
     CONF_REMEMBER_ON_STATE,
+    CONF_RESTORE_INDIVIDUAL_BRIGHTNESS,
     CONF_DEBOUNCE_ENABLED,
     CONF_DEBOUNCE_TIME,
     DOMAIN,
@@ -47,6 +48,9 @@ def light_config_schema() -> vol.Schema:
             vol.Required(CONF_HIDE_MEMBERS, default=False): selector.BooleanSelector(),
             vol.Required(
                 CONF_REMEMBER_ON_STATE, default=False
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_RESTORE_INDIVIDUAL_BRIGHTNESS, default=False
             ): selector.BooleanSelector(),
             vol.Required(
                 CONF_REMEMBER_BRIGHTNESS, default=False
@@ -89,6 +93,9 @@ async def light_options_schema(
             vol.Required(CONF_HIDE_MEMBERS, default=False): selector.BooleanSelector(),
             vol.Required(
                 CONF_REMEMBER_ON_STATE, default=False
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_RESTORE_INDIVIDUAL_BRIGHTNESS, default=False
             ): selector.BooleanSelector(),
             vol.Required(
                 CONF_REMEMBER_BRIGHTNESS, default=False

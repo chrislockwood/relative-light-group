@@ -10,12 +10,14 @@
           "all": "Alle Entitäten müssen eingeschaltet sein",
           "hide_members": "Mitglieder ausblenden",
           "remember_on_state": "Ein/Aus-Zustand merken",
-          "remember_brightness": "Helligkeit merken"
+          "restore_individual_brightness": "Individuelle Helligkeit wiederherstellen",
+          "remember_brightness": "Relative Helligkeit beibehalten"
         },
         "data_description": {
           "all": "Wenn aktiviert, gilt die Gruppe nur als eingeschaltet, wenn alle Mitglieder eingeschaltet sind. Wenn deaktiviert, ist die Gruppe eingeschaltet, wenn ein beliebiges Mitglied eingeschaltet ist.",
           "remember_on_state": "Wenn aktiviert, werden beim erneuten Einschalten der Gruppe nur die Lichter eingeschaltet, die zuvor eingeschaltet waren.",
-          "remember_brightness": "Wenn aktiviert, merkt sich die Gruppe die individuelle Helligkeit jedes Lichts. Verhältnisse bleiben auch bei Helligkeitsgrenzen erhalten. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
+          "restore_individual_brightness": "Wenn aktiviert, erhalten die Lichter beim erneuten Einschalten der Gruppe über die Gruppen-Entität wieder die Helligkeit, die sie vor dem Ausschalten der Gruppe hatten. Lichter ohne gespeicherte Helligkeit (z. B. nur Ein/Aus) schalten sich wie gewohnt ein. Wenn die Gruppe mit einer expliziten Helligkeit eingeschaltet wird, gilt dieser Wert für alle Ziele.",
+          "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
         }
       }
     }
@@ -28,12 +30,14 @@
           "all": "Alle Entitäten müssen eingeschaltet sein",
           "hide_members": "Mitglieder ausblenden",
           "remember_on_state": "Ein/Aus-Zustand merken",
-          "remember_brightness": "Helligkeit merken"
+          "restore_individual_brightness": "Individuelle Helligkeit wiederherstellen",
+          "remember_brightness": "Relative Helligkeit beibehalten"
         },
         "data_description": {
           "all": "Wenn aktiviert, gilt die Gruppe nur als eingeschaltet, wenn alle Mitglieder eingeschaltet sind. Wenn deaktiviert, ist die Gruppe eingeschaltet, wenn ein beliebiges Mitglied eingeschaltet ist.",
           "remember_on_state": "Wenn aktiviert, werden beim erneuten Einschalten der Gruppe nur die Lichter eingeschaltet, die zuvor eingeschaltet waren.",
-          "remember_brightness": "Wenn aktiviert, merkt sich die Gruppe die individuelle Helligkeit jedes Lichts. Verhältnisse bleiben auch bei Helligkeitsgrenzen erhalten. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
+          "restore_individual_brightness": "Wenn aktiviert, erhalten die Lichter beim erneuten Einschalten der Gruppe über die Gruppen-Entität wieder die Helligkeit, die sie vor dem Ausschalten der Gruppe hatten. Lichter ohne gespeicherte Helligkeit (z. B. nur Ein/Aus) schalten sich wie gewohnt ein. Wenn die Gruppe mit einer expliziten Helligkeit eingeschaltet wird, gilt dieser Wert für alle Ziele.",
+          "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
         }
       }
     }

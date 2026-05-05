@@ -10,12 +10,14 @@
           "all": "Todas as entidades devem estar ligadas",
           "hide_members": "Ocultar membros",
           "remember_on_state": "Lembrar estado ligado/desligado",
-          "remember_brightness": "Lembrar brilho"
+          "restore_individual_brightness": "Restaurar brilho individual",
+          "remember_brightness": "Manter brilho relativo"
         },
         "data_description": {
           "all": "Se ativado, o grupo é considerado ligado apenas quando todos os membros estão ligados. Se desativado, o grupo está ligado quando qualquer membro está ligado.",
           "remember_on_state": "Se ativado, quando o grupo é desligado e ligado novamente, apenas as luzes que estavam previamente ligadas serão ligadas.",
-          "remember_brightness": "Se ativado, o grupo lembra o brilho individual de cada luz. As proporções são mantidas mesmo após atingir os limites de brilho. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo."
+          "restore_individual_brightness": "Se ativado, ao desligar e ligar novamente o grupo pela entidade do grupo, cada luz que acende recupera o brilho que tinha antes do grupo ser desligado. Luzes sem brilho guardado (por exemplo apenas ligado/desligado) acendem como de costume. Se ligar o grupo com um brilho explícito, esse valor é aplicado a todas as luzes alvo.",
+          "remember_brightness": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. Elas são preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo."
         }
       }
     }
@@ -28,12 +30,14 @@
           "all": "Todas as entidades devem estar ligadas",
           "hide_members": "Ocultar membros",
           "remember_on_state": "Lembrar estado ligado/desligado",
-          "remember_brightness": "Lembrar brilho"
+          "restore_individual_brightness": "Restaurar brilho individual",
+          "remember_brightness": "Manter brilho relativo"
         },
         "data_description": {
           "all": "Se ativado, o grupo é considerado ligado apenas quando todos os membros estão ligados. Se desativado, o grupo está ligado quando qualquer membro está ligado.",
           "remember_on_state": "Se ativado, quando o grupo é desligado e ligado novamente, apenas as luzes que estavam previamente ligadas serão ligadas.",
-          "remember_brightness": "Se ativado, o grupo lembra o brilho individual de cada luz. As proporções são mantidas mesmo após atingir os limites de brilho. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo."
+          "restore_individual_brightness": "Se ativado, ao desligar e ligar novamente o grupo pela entidade do grupo, cada luz que acende recupera o brilho que tinha antes do grupo ser desligado. Luzes sem brilho guardado (por exemplo apenas ligado/desligado) acendem como de costume. Se ligar o grupo com um brilho explícito, esse valor é aplicado a todas as luzes alvo.",
+          "remember_brightness": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. Elas são preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo."
         }
       }
     }

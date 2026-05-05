@@ -9,7 +9,8 @@ Unlike standard light groups, this integration maintains the relative brightness
 - **Relative Brightness** — When you change the group brightness, each on-light's brightness is adjusted proportionally. Brighter lights stay brighter, dimmer lights stay dimmer.
 - **Only-On-Lights** — Color, effect, color temperature, and other visual attribute changes are only sent to lights that are currently on. Off lights remain off.
 - **Remember on/off state** — If enabled, when the group is turned off and on again, only the lights that were previously on will turn on.
-- **Remember brightness** — If enabled, the group remembers each light's individual brightness. Ratios are preserved even after hitting brightness limits. Individual brightness can only be changed directly on each light, not from the group.
+- **Restore individual brightness** — If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off. On/off-only lights turn on as usual. If you turn the group on with an explicit brightness, that value is used for all targets instead.
+- **Maintain relative brightness** — If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group.
 - **Optimistic State Debounce** — Prevents UI "bouncing" (slider jumping) by ignoring member state updates for a short period after a group command is sent.
 - **Configurable Debounce Time** — Adjust the debounce window (default 2000ms) to match your network's latency.
 - **Native Group Features** — Supports the same standard options as the native integration: selecting light entities, "All entities must be on", and "Hide members".
@@ -47,7 +48,8 @@ This integration supports the same standard options as the native group integrat
 | Option | Description |
 |--------|-------------|
 | **Remember on/off state** | If enabled, when the group is turned off and on again, only the lights that were previously on will turn on. |
-| **Remember brightness** | If enabled, the group remembers each light's individual brightness. Ratios are preserved even after hitting brightness limits. Individual brightness can only be changed directly on each light, not from the group. |
+| **Restore individual brightness** | If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off. On/off-only lights turn on as usual. If you turn the group on with an explicit brightness, that value is used for all targets instead. |
+| **Maintain relative brightness** | If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group. |
 | **Enable optimistic state debounce** | If enabled, the group ignores state updates from members for a short period after a command is sent, preventing the UI slider from jumping. |
 | **Debounce time** | The amount of time in milliseconds to ignore member state updates (default 2000ms). |
 

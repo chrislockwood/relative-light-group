@@ -10,14 +10,16 @@
           "all": "All entities must be on",
           "hide_members": "Hide members",
           "remember_on_state": "Remember on/off state",
-          "remember_brightness": "Remember brightness",
+          "restore_individual_brightness": "Restore individual brightness",
+          "remember_brightness": "Maintain relative brightness",
           "debounce_enabled": "Enable optimistic state debounce",
           "debounce_time": "Debounce time"
         },
         "data_description": {
           "all": "If enabled, the group is considered on only when all members are on. If disabled, the group is on when any member is on.",
           "remember_on_state": "If enabled, when the group is turned off and on again, only the lights that were previously on will turn on.",
-          "remember_brightness": "If enabled, the group remembers each light's individual brightness. Ratios are preserved even after hitting brightness limits. Individual brightness can only be changed directly on each light, not from the group.",
+          "restore_individual_brightness": "If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off. Lights without a stored brightness (for example on/off-only) turn on as usual. If you turn the group on with an explicit brightness, that value is used for all targets instead.",
+          "remember_brightness": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group.",
           "debounce_enabled": "If enabled, the group ignores state updates from members for a short period after a command is sent, preventing the UI slider from jumping.",
           "debounce_time": "The amount of time in milliseconds to ignore member state updates."
         }
@@ -32,14 +34,16 @@
           "all": "All entities must be on",
           "hide_members": "Hide members",
           "remember_on_state": "Remember on/off state",
-          "remember_brightness": "Remember brightness",
+          "restore_individual_brightness": "Restore individual brightness",
+          "remember_brightness": "Maintain relative brightness",
           "debounce_enabled": "Enable optimistic state debounce",
           "debounce_time": "Debounce time"
         },
         "data_description": {
           "all": "If enabled, the group is considered on only when all members are on. If disabled, the group is on when any member is on.",
           "remember_on_state": "If enabled, when the group is turned off and on again, only the lights that were previously on will turn on.",
-          "remember_brightness": "If enabled, the group remembers each light's individual brightness. Ratios are preserved even after hitting brightness limits. Individual brightness can only be changed directly on each light, not from the group.",
+          "restore_individual_brightness": "If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off. Lights without a stored brightness (for example on/off-only) turn on as usual. If you turn the group on with an explicit brightness, that value is used for all targets instead.",
+          "remember_brightness": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group.",
           "debounce_enabled": "If enabled, the group ignores state updates from members for a short period after a command is sent, preventing the UI slider from jumping.",
           "debounce_time": "The amount of time in milliseconds to ignore member state updates."
         }

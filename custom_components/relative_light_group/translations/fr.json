@@ -10,12 +10,14 @@
           "all": "Toutes les entités doivent être allumées",
           "hide_members": "Masquer les membres",
           "remember_on_state": "Mémoriser l'état allumé/éteint",
-          "remember_brightness": "Mémoriser la luminosité"
+          "restore_individual_brightness": "Restaurer la luminosité individuelle",
+          "remember_brightness": "Maintenir la luminosité relative"
         },
         "data_description": {
           "all": "Si activé, le groupe est considéré comme allumé uniquement lorsque tous les membres sont allumés. Si désactivé, le groupe est allumé lorsqu'un membre quelconque est allumé.",
           "remember_on_state": "Si activé, lorsque le groupe est éteint puis rallumé, seules les lumières précédemment allumées seront rallumées.",
-          "remember_brightness": "Si activé, le groupe mémorise la luminosité individuelle de chaque lumière. Les proportions sont préservées même après avoir atteint les limites de luminosité. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
+          "restore_individual_brightness": "Si activé, lorsque vous éteignez puis rallumez le groupe depuis l'entité du groupe, chaque lumière qui s'allume retrouve la luminosité qu'elle avait avant l'extinction du groupe. Les lumières sans luminosité enregistrée (par exemple marche/arrêt uniquement) s'allument comme d'habitude. Si vous rallumez le groupe avec une luminosité explicite, cette valeur est appliquée à toutes les cibles.",
+          "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
         }
       }
     }
@@ -28,12 +30,14 @@
           "all": "Toutes les entités doivent être allumées",
           "hide_members": "Masquer les membres",
           "remember_on_state": "Mémoriser l'état allumé/éteint",
-          "remember_brightness": "Mémoriser la luminosité"
+          "restore_individual_brightness": "Restaurer la luminosité individuelle",
+          "remember_brightness": "Maintenir la luminosité relative"
         },
         "data_description": {
           "all": "Si activé, le groupe est considéré comme allumé uniquement lorsque tous les membres sont allumés. Si désactivé, le groupe est allumé lorsqu'un membre quelconque est allumé.",
           "remember_on_state": "Si activé, lorsque le groupe est éteint puis rallumé, seules les lumières précédemment allumées seront rallumées.",
-          "remember_brightness": "Si activé, le groupe mémorise la luminosité individuelle de chaque lumière. Les proportions sont préservées même après avoir atteint les limites de luminosité. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
+          "restore_individual_brightness": "Si activé, lorsque vous éteignez puis rallumez le groupe depuis l'entité du groupe, chaque lumière qui s'allume retrouve la luminosité qu'elle avait avant l'extinction du groupe. Les lumières sans luminosité enregistrée (par exemple marche/arrêt uniquement) s'allument comme d'habitude. Si vous rallumez le groupe avec une luminosité explicite, cette valeur est appliquée à toutes les cibles.",
+          "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
         }
       }
     }

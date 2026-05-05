@@ -10,14 +10,16 @@
           "all": "Todas las entidades deben estar encendidas",
           "hide_members": "Ocultar miembros",
           "remember_on_state": "Recordar estado encendido/apagado",
-          "remember_brightness": "Recordar brillo",
+          "restore_individual_brightness": "Restaurar brillo individual",
+          "remember_brightness": "Mantener brillo relativo",
           "debounce_enabled": "Activar el debounce del estado optimista",
           "debounce_time": "Tiempo de debounce"
         },
         "data_description": {
           "all": "Si está activado, el grupo se considera encendido solo cuando todos los miembros están encendidos. Si está desactivado, el grupo está encendido cuando cualquier miembro está encendido.",
           "remember_on_state": "Si está activado, cuando el grupo se apaga y se vuelve a encender, solo se encenderán las luces que estaban previamente encendidas.",
-          "remember_brightness": "Si está activado, el grupo recuerda el brillo individual de cada luz. Las proporciones se mantienen incluso al alcanzar los límites de brillo. El brillo individual solo puede modificarse directamente en cada luz, no desde el grupo.",
+          "restore_individual_brightness": "Si está activado, al apagar y volver a encender el grupo desde la entidad del grupo, cada luz que se enciende recupera el brillo que tenía antes de apagar el grupo. Las luces sin brillo guardado (por ejemplo solo encendido/apagado) se encienden con su comportamiento habitual. Si enciendes el grupo con un brillo explícito, ese valor se aplica a todas las luces objetivo.",
+          "remember_brightness": "Si está activado, el grupo mantiene las proporciones de brillo entre las luces. Se conservan incluso cuando el grupo alcanza el brillo mínimo o máximo. El brillo individual solo puede modificarse directamente en cada luz, no desde el grupo.",
           "debounce_enabled": "Si está activado, el grupo ignora las actualizaciones de estado de los miembros durante un periodo corto después de enviar un comando, evitando que el slider de la interfaz de usuario salte.",
           "debounce_time": "La cantidad de tiempo en milisegundos para ignorar las actualizaciones de estado de los miembros."
         }
@@ -32,14 +34,16 @@
           "all": "Todas las entidades deben estar encendidas",
           "hide_members": "Ocultar miembros",
           "remember_on_state": "Recordar estado encendido/apagado",
-          "remember_brightness": "Recordar brillo",
+          "restore_individual_brightness": "Restaurar brillo individual",
+          "remember_brightness": "Mantener brillo relativo",
           "debounce_enabled": "Activar el debounce del estado optimista",
           "debounce_time": "Tiempo de debounce"
         },
         "data_description": {
           "all": "Si está activado, el grupo se considera encendido solo cuando todos los miembros están encendidos. Si está desactivado, el grupo está encendido cuando cualquier miembro está encendido.",
           "remember_on_state": "Si está activado, cuando el grupo se apaga y se vuelve a encender, solo se encenderán las luces que estaban previamente encendidas.",
-          "remember_brightness": "Si está activado, el grupo recuerda el brillo individual de cada luz. Las proporciones se mantienen incluso al alcanzar los límites de brillo. El brillo individual solo puede modificarse directamente en cada luz, no desde el grupo.",
+          "restore_individual_brightness": "Si está activado, al apagar y volver a encender el grupo desde la entidad del grupo, cada luz que se enciende recupera el brillo que tenía antes de apagar el grupo. Las luces sin brillo guardado (por ejemplo solo encendido/apagado) se encienden con su comportamiento habitual. Si enciendes el grupo con un brillo explícito, ese valor se aplica a todas las luces objetivo.",
+          "remember_brightness": "Si está activado, el grupo mantiene las proporciones de brillo entre las luces. Se conservan incluso cuando el grupo alcanza el brillo mínimo o máximo. El brillo individual solo puede modificarse directamente en cada luz, no desde el grupo.",
           "debounce_enabled": "Si está activado, el grupo ignora las actualizaciones de estado de los miembros durante un periodo corto después de enviar un comando, evitando que el slider de la interfaz de usuario salte.",
           "debounce_time": "La cantidad de tiempo en milisegundos para ignorar las actualizaciones de estado de los miembros."
         }
