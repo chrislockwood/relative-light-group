@@ -24,6 +24,15 @@
           "debounce_time": "The amount of time in milliseconds to ignore member state updates."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Invalid entity reference: {entity_id}.",
+      "invalid_domain": "{entity_id} is not a light entity. Only entities from the 'light' domain are allowed.",
+      "self_reference": "{entity_id} cannot be a member of itself.",
+      "unknown_entity": "{entity_id} does not exist.",
+      "nested_relative_group": "{entity_id} belongs to another Relative Light Group; nesting is not supported.",
+      "empty_group": "The group must contain at least one light.",
+      "invalid_entities": "One or more selected entities are invalid."
     }
   },
   "options": {
@@ -48,6 +57,113 @@
           "debounce_time": "The amount of time in milliseconds to ignore member state updates."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Invalid entity reference: {entity_id}.",
+      "invalid_domain": "{entity_id} is not a light entity. Only entities from the 'light' domain are allowed.",
+      "self_reference": "{entity_id} cannot be a member of itself.",
+      "unknown_entity": "{entity_id} does not exist.",
+      "nested_relative_group": "{entity_id} belongs to another Relative Light Group; nesting is not supported.",
+      "empty_group": "The group must contain at least one light.",
+      "invalid_entities": "One or more selected entities are invalid."
+    }
+  },
+  "services": {
+    "set_options": {
+      "name": "Update group options",
+      "description": "Update one or more options of a Relative Light Group. Only the keys you send are changed; the rest are preserved. The group is reloaded after a successful change.",
+      "fields": {
+        "all": {
+          "name": "All entities must be on",
+          "description": "If enabled, the group is considered on only when all members are on. If disabled, the group is on when any member is on."
+        },
+        "hide_members": {
+          "name": "Hide members",
+          "description": "If enabled, the group's member entities are hidden in the entity registry."
+        },
+        "remember_on_state": {
+          "name": "Remember on/off state",
+          "description": "If enabled, when the group is turned off and on again, only the lights that were previously on will turn on."
+        },
+        "restore_individual_brightness": {
+          "name": "Restore individual brightness",
+          "description": "If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off."
+        },
+        "remember_brightness": {
+          "name": "Maintain relative brightness",
+          "description": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness."
+        },
+        "debounce_enabled": {
+          "name": "Enable optimistic state debounce",
+          "description": "If enabled, the group ignores state updates from members for a short period after a command is sent, preventing the UI slider from jumping."
+        },
+        "debounce_time": {
+          "name": "Debounce time",
+          "description": "Milliseconds to ignore member state updates after a group command (only effective when the optimistic debounce is enabled)."
+        }
+      }
+    },
+    "add_lights": {
+      "name": "Add lights to group",
+      "description": "Append one or more lights to the group's member list. Lights already in the group are ignored. Lights that belong to another Relative Light Group are rejected to prevent circular references.",
+      "fields": {
+        "entities": {
+          "name": "Lights to add",
+          "description": "One or more light entities to add to the group."
+        }
+      }
+    },
+    "remove_lights": {
+      "name": "Remove lights from group",
+      "description": "Remove one or more lights from the group's member list. Lights not in the group are ignored. The group cannot be left empty; the call is rejected if the resulting list would be empty.",
+      "fields": {
+        "entities": {
+          "name": "Lights to remove",
+          "description": "One or more light entities to remove from the group."
+        }
+      }
+    },
+    "set_lights": {
+      "name": "Replace group lights",
+      "description": "Replace the group's member list with the provided lights. The list cannot be empty and cannot contain entities that belong to another Relative Light Group.",
+      "fields": {
+        "entities": {
+          "name": "Lights",
+          "description": "New ordered list of light entities for the group."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_target": {
+      "message": "No target group entity provided. Use 'target.entity_id' with a Relative Light Group entity."
+    },
+    "no_valid_target": {
+      "message": "None of the targeted entities belongs to a loaded Relative Light Group: {entities}."
+    },
+    "no_options": {
+      "message": "No options provided. Send at least one option to change."
+    },
+    "invalid_entity": {
+      "message": "Invalid entity reference: {entity_id}."
+    },
+    "invalid_domain": {
+      "message": "{entity_id} is not a light entity. Only entities from the 'light' domain are allowed."
+    },
+    "self_reference": {
+      "message": "{entity_id} cannot be a member of itself."
+    },
+    "unknown_entity": {
+      "message": "{entity_id} does not exist."
+    },
+    "nested_relative_group": {
+      "message": "{entity_id} belongs to another Relative Light Group; nesting is not supported."
+    },
+    "invalid_entities": {
+      "message": "Invalid entities: {error}."
+    },
+    "empty_group": {
+      "message": "The group '{group}' cannot be left empty."
     }
   }
 }

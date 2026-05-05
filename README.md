@@ -66,6 +66,114 @@ When you adjust the group brightness slider:
 - Light A (closer to max) increases to 255
 - Light B increases proportionally, maintaining its relative position
 
+## Services
+
+The integration registers four services under the `relative_light_group` domain. They are fully compatible with the Developer Tools service UI (selectors with native pickers) and can be called from automations, scripts, scenes, or buttons. All services target one or more group entities (entities of `light` domain that belong to this integration); the matching config entries are reloaded after a successful change.
+
+Common rules:
+
+- The target entity must belong to a loaded **Relative Light Group**. Any other targets are skipped (and the call fails if none of the targeted entities is a valid group).
+- Membership changes never allow nesting: any light that itself belongs to another Relative Light Group is rejected to prevent circular references. The same rule is enforced when creating or editing a group from the UI.
+- A group cannot be left empty.
+- All membership operations deduplicate while preserving the order you provided.
+- Calls are serialized per group (an internal lock per config entry) to avoid races between concurrent automations.
+
+### `relative_light_group.set_options`
+
+Friendly name: **Update group options**
+
+Update one or more options of a Relative Light Group. **Only the keys you send are changed; the rest are preserved.** The group is reloaded after a successful change.
+
+**Target:** one or more `light` entities of this integration.
+
+| Field | Friendly name | Description | Type / domain | Default | Required |
+|-------|---------------|-------------|---------------|---------|----------|
+| `all` | All entities must be on | Group is considered on only when all members are on. If false, on when any member is on. | `boolean` | `false` (existing value preserved if not sent) | No |
+| `hide_members` | Hide members | Hide the group's member entities in the entity registry. | `boolean` | `false` | No |
+| `remember_on_state` | Remember on/off state | When the group is turned off and on again, only the lights that were previously on will turn on. | `boolean` | `false` | No |
+| `restore_individual_brightness` | Restore individual brightness | Each light recovers the brightness it had before the group was turned off. | `boolean` | `false` | No |
+| `remember_brightness` | Maintain relative brightness | Keep brightness ratios between lights even at min/max group brightness. | `boolean` | `false` | No |
+| `debounce_enabled` | Enable optimistic state debounce | Ignore member updates for a short period after a group command. | `boolean` | `true` | No |
+| `debounce_time` | Debounce time | Milliseconds to ignore member updates after a group command. | `integer` (`0`–`10000`, step `100`, ms) | `2000` | No |
+
+The defaults shown are the integration defaults. When called without a key, the **existing value of that option is preserved**, not reset to the default.
+
+```yaml
+service: relative_light_group.set_options
+target:
+  entity_id: light.salon_rel
+data:
+  remember_on_state: true
+  restore_individual_brightness: true
+  debounce_time: 1500
+```
+
+### `relative_light_group.add_lights`
+
+Friendly name: **Add lights to group**
+
+Append one or more lights to the group's member list. Lights already in the group are ignored. Lights that belong to another Relative Light Group are rejected.
+
+**Target:** one or more `light` entities of this integration.
+
+| Field | Friendly name | Description | Type / domain | Default | Required |
+|-------|---------------|-------------|---------------|---------|----------|
+| `entities` | Lights to add | One or more `light` entities to add to the group. | List of `entity_id` (domain `light`) | — | Yes |
+
+```yaml
+service: relative_light_group.add_lights
+target:
+  entity_id: light.salon_rel
+data:
+  entities:
+    - light.lampara_lectura
+    - light.aplique_pared
+```
+
+### `relative_light_group.remove_lights`
+
+Friendly name: **Remove lights from group**
+
+Remove one or more lights from the group's member list. Lights not in the group are ignored. The call is rejected if the resulting list would be empty.
+
+**Target:** one or more `light` entities of this integration.
+
+| Field | Friendly name | Description | Type / domain | Default | Required |
+|-------|---------------|-------------|---------------|---------|----------|
+| `entities` | Lights to remove | One or more `light` entities to remove from the group. | List of `entity_id` (domain `light`) | — | Yes |
+
+```yaml
+service: relative_light_group.remove_lights
+target:
+  entity_id: light.salon_rel
+data:
+  entities:
+    - light.aplique_pared
+```
+
+### `relative_light_group.set_lights`
+
+Friendly name: **Replace group lights**
+
+Replace the group's member list with the provided lights. The list cannot be empty and cannot contain entities that belong to another Relative Light Group.
+
+**Target:** one or more `light` entities of this integration.
+
+| Field | Friendly name | Description | Type / domain | Default | Required |
+|-------|---------------|-------------|---------------|---------|----------|
+| `entities` | Lights | New ordered list of `light` entities for the group. | List of `entity_id` (domain `light`) | — | Yes |
+
+```yaml
+service: relative_light_group.set_lights
+target:
+  entity_id: light.salon_rel
+data:
+  entities:
+    - light.lampara_lectura
+    - light.aplique_pared
+    - light.lampara_techo
+```
+
 ## Author
 
 **Felipe Urzúa**  

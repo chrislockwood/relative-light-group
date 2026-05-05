@@ -20,6 +20,15 @@
           "remember_brightness": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Restano tali anche quando il gruppo raggiunge la luminosità minima o massima. La luminosità individuale può essere modificata solo direttamente su ogni luce, non dal gruppo."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Riferimento entità non valido: {entity_id}.",
+      "invalid_domain": "{entity_id} non è un'entità luce. Sono ammesse solo entità del dominio 'light'.",
+      "self_reference": "{entity_id} non può essere membro di se stesso.",
+      "unknown_entity": "{entity_id} non esiste.",
+      "nested_relative_group": "{entity_id} appartiene a un altro Gruppo Luci Relativo; l'annidamento non è supportato.",
+      "empty_group": "Il gruppo deve contenere almeno una luce.",
+      "invalid_entities": "Una o più entità selezionate non sono valide."
     }
   },
   "options": {
@@ -40,6 +49,113 @@
           "remember_brightness": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Restano tali anche quando il gruppo raggiunge la luminosità minima o massima. La luminosità individuale può essere modificata solo direttamente su ogni luce, non dal gruppo."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Riferimento entità non valido: {entity_id}.",
+      "invalid_domain": "{entity_id} non è un'entità luce. Sono ammesse solo entità del dominio 'light'.",
+      "self_reference": "{entity_id} non può essere membro di se stesso.",
+      "unknown_entity": "{entity_id} non esiste.",
+      "nested_relative_group": "{entity_id} appartiene a un altro Gruppo Luci Relativo; l'annidamento non è supportato.",
+      "empty_group": "Il gruppo deve contenere almeno una luce.",
+      "invalid_entities": "Una o più entità selezionate non sono valide."
+    }
+  },
+  "services": {
+    "set_options": {
+      "name": "Aggiorna opzioni del gruppo",
+      "description": "Aggiorna una o più opzioni di un Gruppo Luci Relativo. Vengono modificate solo le chiavi inviate; le altre vengono mantenute. Il gruppo viene ricaricato dopo una modifica andata a buon fine.",
+      "fields": {
+        "all": {
+          "name": "Tutte le entità devono essere accese",
+          "description": "Se abilitato, il gruppo è considerato acceso solo quando tutti i membri sono accesi. Se disabilitato, il gruppo è acceso quando un qualsiasi membro è acceso."
+        },
+        "hide_members": {
+          "name": "Nascondi membri",
+          "description": "Se abilitato, le entità membro del gruppo vengono nascoste nel registro entità."
+        },
+        "remember_on_state": {
+          "name": "Ricorda stato acceso/spento",
+          "description": "Se abilitato, quando il gruppo viene spento e riacceso, si accenderanno solo le luci che erano precedentemente accese."
+        },
+        "restore_individual_brightness": {
+          "name": "Ripristina luminosità individuale",
+          "description": "Se abilitato, spegnendo e riaccendendo il gruppo dall'entità del gruppo, ogni luce torna alla luminosità che aveva prima che il gruppo venisse spento."
+        },
+        "remember_brightness": {
+          "name": "Mantieni luminosità relativa",
+          "description": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Vengono mantenute anche al raggiungimento della luminosità minima o massima."
+        },
+        "debounce_enabled": {
+          "name": "Abilita debounce stato ottimistico",
+          "description": "Se abilitato, il gruppo ignora gli aggiornamenti di stato dei membri per un breve periodo dopo aver inviato un comando, evitando che lo slider della UI salti."
+        },
+        "debounce_time": {
+          "name": "Tempo di debounce",
+          "description": "Millisecondi durante i quali vengono ignorati gli aggiornamenti di stato dei membri dopo un comando del gruppo (solo se il debounce ottimistico è abilitato)."
+        }
+      }
+    },
+    "add_lights": {
+      "name": "Aggiungi luci al gruppo",
+      "description": "Aggiunge una o più luci all'elenco dei membri del gruppo. Le luci già presenti vengono ignorate. Le luci che appartengono a un altro Gruppo Luci Relativo vengono rifiutate per evitare riferimenti circolari.",
+      "fields": {
+        "entities": {
+          "name": "Luci da aggiungere",
+          "description": "Una o più entità luce da aggiungere al gruppo."
+        }
+      }
+    },
+    "remove_lights": {
+      "name": "Rimuovi luci dal gruppo",
+      "description": "Rimuove una o più luci dall'elenco dei membri del gruppo. Le luci non presenti nel gruppo vengono ignorate. Il gruppo non può rimanere vuoto; la chiamata viene rifiutata se la lista risultante sarebbe vuota.",
+      "fields": {
+        "entities": {
+          "name": "Luci da rimuovere",
+          "description": "Una o più entità luce da rimuovere dal gruppo."
+        }
+      }
+    },
+    "set_lights": {
+      "name": "Sostituisci le luci del gruppo",
+      "description": "Sostituisce l'elenco dei membri del gruppo con le luci fornite. L'elenco non può essere vuoto e non può contenere entità che appartengono a un altro Gruppo Luci Relativo.",
+      "fields": {
+        "entities": {
+          "name": "Luci",
+          "description": "Nuovo elenco ordinato di entità luce per il gruppo."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_target": {
+      "message": "Nessuna entità di gruppo di destinazione fornita. Usa 'target.entity_id' con un'entità Gruppo Luci Relativo."
+    },
+    "no_valid_target": {
+      "message": "Nessuna delle entità di destinazione appartiene a un Gruppo Luci Relativo caricato: {entities}."
+    },
+    "no_options": {
+      "message": "Nessuna opzione fornita. Invia almeno un'opzione da modificare."
+    },
+    "invalid_entity": {
+      "message": "Riferimento entità non valido: {entity_id}."
+    },
+    "invalid_domain": {
+      "message": "{entity_id} non è un'entità luce. Sono ammesse solo entità del dominio 'light'."
+    },
+    "self_reference": {
+      "message": "{entity_id} non può essere membro di se stesso."
+    },
+    "unknown_entity": {
+      "message": "{entity_id} non esiste."
+    },
+    "nested_relative_group": {
+      "message": "{entity_id} appartiene a un altro Gruppo Luci Relativo; l'annidamento non è supportato."
+    },
+    "invalid_entities": {
+      "message": "Entità non valide: {error}."
+    },
+    "empty_group": {
+      "message": "Il gruppo '{group}' non può rimanere vuoto."
     }
   }
 }

@@ -20,6 +20,15 @@
           "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Référence d'entité invalide : {entity_id}.",
+      "invalid_domain": "{entity_id} n'est pas une entité lumineuse. Seules les entités du domaine 'light' sont autorisées.",
+      "self_reference": "{entity_id} ne peut pas être membre de lui-même.",
+      "unknown_entity": "{entity_id} n'existe pas.",
+      "nested_relative_group": "{entity_id} appartient à un autre Groupe de lumières relatif ; l'imbrication n'est pas prise en charge.",
+      "empty_group": "Le groupe doit contenir au moins une lumière.",
+      "invalid_entities": "Une ou plusieurs entités sélectionnées sont invalides."
     }
   },
   "options": {
@@ -40,6 +49,113 @@
           "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Référence d'entité invalide : {entity_id}.",
+      "invalid_domain": "{entity_id} n'est pas une entité lumineuse. Seules les entités du domaine 'light' sont autorisées.",
+      "self_reference": "{entity_id} ne peut pas être membre de lui-même.",
+      "unknown_entity": "{entity_id} n'existe pas.",
+      "nested_relative_group": "{entity_id} appartient à un autre Groupe de lumières relatif ; l'imbrication n'est pas prise en charge.",
+      "empty_group": "Le groupe doit contenir au moins une lumière.",
+      "invalid_entities": "Une ou plusieurs entités sélectionnées sont invalides."
+    }
+  },
+  "services": {
+    "set_options": {
+      "name": "Mettre à jour les options du groupe",
+      "description": "Met à jour une ou plusieurs options d'un Groupe de lumières relatif. Seules les clés que vous envoyez sont modifiées ; les autres sont conservées. Le groupe est rechargé après une modification réussie.",
+      "fields": {
+        "all": {
+          "name": "Toutes les entités doivent être allumées",
+          "description": "Si activé, le groupe est considéré comme allumé uniquement lorsque tous les membres sont allumés. Si désactivé, le groupe est allumé dès qu'un membre est allumé."
+        },
+        "hide_members": {
+          "name": "Masquer les membres",
+          "description": "Si activé, les entités membres du groupe sont masquées dans le registre d'entités."
+        },
+        "remember_on_state": {
+          "name": "Mémoriser l'état allumé/éteint",
+          "description": "Si activé, lorsque le groupe est éteint puis rallumé, seules les lumières précédemment allumées seront rallumées."
+        },
+        "restore_individual_brightness": {
+          "name": "Restaurer la luminosité individuelle",
+          "description": "Si activé, lorsque vous éteignez puis rallumez le groupe depuis l'entité du groupe, chaque lumière retrouve la luminosité qu'elle avait avant l'extinction du groupe."
+        },
+        "remember_brightness": {
+          "name": "Maintenir la luminosité relative",
+          "description": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale."
+        },
+        "debounce_enabled": {
+          "name": "Activer l'anti-rebond d'état optimiste",
+          "description": "Si activé, le groupe ignore les mises à jour d'état des membres pendant un court délai après l'envoi d'une commande, ce qui empêche le curseur de l'interface de sauter."
+        },
+        "debounce_time": {
+          "name": "Temps d'anti-rebond",
+          "description": "Millisecondes pendant lesquelles les mises à jour d'état des membres sont ignorées après une commande du groupe (uniquement si l'anti-rebond optimiste est activé)."
+        }
+      }
+    },
+    "add_lights": {
+      "name": "Ajouter des lumières au groupe",
+      "description": "Ajoute une ou plusieurs lumières à la liste des membres du groupe. Les lumières déjà présentes sont ignorées. Les lumières appartenant à un autre Groupe de lumières relatif sont rejetées pour éviter les références circulaires.",
+      "fields": {
+        "entities": {
+          "name": "Lumières à ajouter",
+          "description": "Une ou plusieurs entités lumineuses à ajouter au groupe."
+        }
+      }
+    },
+    "remove_lights": {
+      "name": "Retirer des lumières du groupe",
+      "description": "Retire une ou plusieurs lumières de la liste des membres du groupe. Les lumières absentes du groupe sont ignorées. Le groupe ne peut pas être vide ; l'appel est rejeté si la liste résultante serait vide.",
+      "fields": {
+        "entities": {
+          "name": "Lumières à retirer",
+          "description": "Une ou plusieurs entités lumineuses à retirer du groupe."
+        }
+      }
+    },
+    "set_lights": {
+      "name": "Remplacer les lumières du groupe",
+      "description": "Remplace la liste des membres du groupe par les lumières fournies. La liste ne peut pas être vide ni contenir d'entités appartenant à un autre Groupe de lumières relatif.",
+      "fields": {
+        "entities": {
+          "name": "Lumières",
+          "description": "Nouvelle liste ordonnée d'entités lumineuses pour le groupe."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_target": {
+      "message": "Aucune entité de groupe cible fournie. Utilisez 'target.entity_id' avec une entité de Groupe de lumières relatif."
+    },
+    "no_valid_target": {
+      "message": "Aucune des entités ciblées n'appartient à un Groupe de lumières relatif chargé : {entities}."
+    },
+    "no_options": {
+      "message": "Aucune option fournie. Envoyez au moins une option à modifier."
+    },
+    "invalid_entity": {
+      "message": "Référence d'entité invalide : {entity_id}."
+    },
+    "invalid_domain": {
+      "message": "{entity_id} n'est pas une entité lumineuse. Seules les entités du domaine 'light' sont autorisées."
+    },
+    "self_reference": {
+      "message": "{entity_id} ne peut pas être membre de lui-même."
+    },
+    "unknown_entity": {
+      "message": "{entity_id} n'existe pas."
+    },
+    "nested_relative_group": {
+      "message": "{entity_id} appartient à un autre Groupe de lumières relatif ; l'imbrication n'est pas prise en charge."
+    },
+    "invalid_entities": {
+      "message": "Entités invalides : {error}."
+    },
+    "empty_group": {
+      "message": "Le groupe '{group}' ne peut pas être vide."
     }
   }
 }

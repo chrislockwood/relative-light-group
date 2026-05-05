@@ -24,6 +24,15 @@
           "debounce_time": "La cantidad de tiempo en milisegundos para ignorar las actualizaciones de estado de los miembros."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Referencia de entidad inválida: {entity_id}.",
+      "invalid_domain": "{entity_id} no es una entidad de luz. Solo se permiten entidades del dominio 'light'.",
+      "self_reference": "{entity_id} no puede ser miembro de sí mismo.",
+      "unknown_entity": "{entity_id} no existe.",
+      "nested_relative_group": "{entity_id} pertenece a otro Grupo de luces relativo; no se admite el anidamiento.",
+      "empty_group": "El grupo debe contener al menos una luz.",
+      "invalid_entities": "Una o más entidades seleccionadas no son válidas."
     }
   },
   "options": {
@@ -48,6 +57,113 @@
           "debounce_time": "La cantidad de tiempo en milisegundos para ignorar las actualizaciones de estado de los miembros."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Referencia de entidad inválida: {entity_id}.",
+      "invalid_domain": "{entity_id} no es una entidad de luz. Solo se permiten entidades del dominio 'light'.",
+      "self_reference": "{entity_id} no puede ser miembro de sí mismo.",
+      "unknown_entity": "{entity_id} no existe.",
+      "nested_relative_group": "{entity_id} pertenece a otro Grupo de luces relativo; no se admite el anidamiento.",
+      "empty_group": "El grupo debe contener al menos una luz.",
+      "invalid_entities": "Una o más entidades seleccionadas no son válidas."
+    }
+  },
+  "services": {
+    "set_options": {
+      "name": "Actualizar opciones del grupo",
+      "description": "Actualiza una o más opciones de un Grupo de luces relativo. Solo se cambian las claves que envíes; el resto se conservan. El grupo se recarga tras un cambio exitoso.",
+      "fields": {
+        "all": {
+          "name": "Todas las entidades deben estar encendidas",
+          "description": "Si está activado, el grupo se considera encendido solo cuando todos los miembros están encendidos. Si está desactivado, el grupo está encendido cuando cualquier miembro está encendido."
+        },
+        "hide_members": {
+          "name": "Ocultar miembros",
+          "description": "Si está activado, las entidades miembro del grupo se ocultan en el registro de entidades."
+        },
+        "remember_on_state": {
+          "name": "Recordar estado encendido/apagado",
+          "description": "Si está activado, al apagar y volver a encender el grupo, solo se encienden las luces que estaban encendidas antes."
+        },
+        "restore_individual_brightness": {
+          "name": "Restaurar brillo individual",
+          "description": "Si está activado, al apagar y volver a encender el grupo desde la entidad del grupo, cada luz recupera el brillo que tenía antes de apagar el grupo."
+        },
+        "remember_brightness": {
+          "name": "Mantener brillo relativo",
+          "description": "Si está activado, el grupo mantiene las proporciones de brillo entre luces. Se conservan incluso cuando el grupo alcanza el brillo mínimo o máximo."
+        },
+        "debounce_enabled": {
+          "name": "Activar el debounce del estado optimista",
+          "description": "Si está activado, el grupo ignora las actualizaciones de estado de los miembros durante un periodo corto después de enviar un comando, evitando que el slider salte."
+        },
+        "debounce_time": {
+          "name": "Tiempo de debounce",
+          "description": "Milisegundos durante los cuales se ignoran las actualizaciones de estado de los miembros tras un comando del grupo (solo si el debounce está activo)."
+        }
+      }
+    },
+    "add_lights": {
+      "name": "Añadir luces al grupo",
+      "description": "Añade una o varias luces a la lista de miembros del grupo. Las que ya están se ignoran. Se rechazan las que pertenecen a otro Grupo de luces relativo para evitar referencias circulares.",
+      "fields": {
+        "entities": {
+          "name": "Luces a añadir",
+          "description": "Una o varias entidades de luz para añadir al grupo."
+        }
+      }
+    },
+    "remove_lights": {
+      "name": "Quitar luces del grupo",
+      "description": "Quita una o varias luces de la lista de miembros del grupo. Las que no estén en el grupo se ignoran. El grupo no puede quedar vacío; la llamada se rechaza si el resultado quedaría vacío.",
+      "fields": {
+        "entities": {
+          "name": "Luces a quitar",
+          "description": "Una o varias entidades de luz para quitar del grupo."
+        }
+      }
+    },
+    "set_lights": {
+      "name": "Reemplazar luces del grupo",
+      "description": "Reemplaza la lista de miembros del grupo por las luces indicadas. La lista no puede estar vacía ni contener entidades que pertenezcan a otro Grupo de luces relativo.",
+      "fields": {
+        "entities": {
+          "name": "Luces",
+          "description": "Nueva lista ordenada de entidades de luz del grupo."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_target": {
+      "message": "No se proporcionó la entidad del grupo. Usa 'target.entity_id' con una entidad de Grupo de luces relativo."
+    },
+    "no_valid_target": {
+      "message": "Ninguna de las entidades indicadas pertenece a un Grupo de luces relativo cargado: {entities}."
+    },
+    "no_options": {
+      "message": "No se enviaron opciones. Envía al menos una opción para cambiar."
+    },
+    "invalid_entity": {
+      "message": "Referencia de entidad inválida: {entity_id}."
+    },
+    "invalid_domain": {
+      "message": "{entity_id} no es una entidad de luz. Solo se permiten entidades del dominio 'light'."
+    },
+    "self_reference": {
+      "message": "{entity_id} no puede ser miembro de sí mismo."
+    },
+    "unknown_entity": {
+      "message": "{entity_id} no existe."
+    },
+    "nested_relative_group": {
+      "message": "{entity_id} pertenece a otro Grupo de luces relativo; no se admite el anidamiento."
+    },
+    "invalid_entities": {
+      "message": "Entidades inválidas: {error}."
+    },
+    "empty_group": {
+      "message": "El grupo '{group}' no puede quedar vacío."
     }
   }
 }

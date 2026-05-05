@@ -20,6 +20,15 @@
           "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Ungültige Entitätsreferenz: {entity_id}.",
+      "invalid_domain": "{entity_id} ist keine Licht-Entität. Es sind nur Entitäten der Domäne 'light' erlaubt.",
+      "self_reference": "{entity_id} kann nicht Mitglied von sich selbst sein.",
+      "unknown_entity": "{entity_id} existiert nicht.",
+      "nested_relative_group": "{entity_id} gehört zu einer anderen Relativen Lichtgruppe; Verschachtelung wird nicht unterstützt.",
+      "empty_group": "Die Gruppe muss mindestens ein Licht enthalten.",
+      "invalid_entities": "Eine oder mehrere ausgewählte Entitäten sind ungültig."
     }
   },
   "options": {
@@ -40,6 +49,113 @@
           "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
         }
       }
+    },
+    "error": {
+      "invalid_entity": "Ungültige Entitätsreferenz: {entity_id}.",
+      "invalid_domain": "{entity_id} ist keine Licht-Entität. Es sind nur Entitäten der Domäne 'light' erlaubt.",
+      "self_reference": "{entity_id} kann nicht Mitglied von sich selbst sein.",
+      "unknown_entity": "{entity_id} existiert nicht.",
+      "nested_relative_group": "{entity_id} gehört zu einer anderen Relativen Lichtgruppe; Verschachtelung wird nicht unterstützt.",
+      "empty_group": "Die Gruppe muss mindestens ein Licht enthalten.",
+      "invalid_entities": "Eine oder mehrere ausgewählte Entitäten sind ungültig."
+    }
+  },
+  "services": {
+    "set_options": {
+      "name": "Gruppenoptionen aktualisieren",
+      "description": "Aktualisiert eine oder mehrere Optionen einer Relativen Lichtgruppe. Nur die gesendeten Schlüssel werden geändert; die übrigen bleiben erhalten. Die Gruppe wird nach einer erfolgreichen Änderung neu geladen.",
+      "fields": {
+        "all": {
+          "name": "Alle Entitäten müssen eingeschaltet sein",
+          "description": "Wenn aktiviert, gilt die Gruppe nur als eingeschaltet, wenn alle Mitglieder eingeschaltet sind. Wenn deaktiviert, ist die Gruppe eingeschaltet, sobald ein Mitglied eingeschaltet ist."
+        },
+        "hide_members": {
+          "name": "Mitglieder ausblenden",
+          "description": "Wenn aktiviert, werden die Mitgliedsentitäten der Gruppe im Entitätsregister ausgeblendet."
+        },
+        "remember_on_state": {
+          "name": "Ein/Aus-Zustand merken",
+          "description": "Wenn aktiviert, werden beim erneuten Einschalten der Gruppe nur die Lichter eingeschaltet, die zuvor eingeschaltet waren."
+        },
+        "restore_individual_brightness": {
+          "name": "Individuelle Helligkeit wiederherstellen",
+          "description": "Wenn aktiviert, erhalten die Lichter beim erneuten Einschalten der Gruppe über die Gruppen-Entität wieder die Helligkeit, die sie vor dem Ausschalten der Gruppe hatten."
+        },
+        "remember_brightness": {
+          "name": "Relative Helligkeit beibehalten",
+          "description": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Sie bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht."
+        },
+        "debounce_enabled": {
+          "name": "Optimistisches Status-Debouncing aktivieren",
+          "description": "Wenn aktiviert, ignoriert die Gruppe Statusaktualisierungen der Mitglieder für einen kurzen Zeitraum nach einem Befehl, damit der UI-Schieberegler nicht springt."
+        },
+        "debounce_time": {
+          "name": "Debounce-Zeit",
+          "description": "Millisekunden, in denen Statusaktualisierungen der Mitglieder nach einem Gruppenbefehl ignoriert werden (nur wirksam, wenn das optimistische Debouncing aktiviert ist)."
+        }
+      }
+    },
+    "add_lights": {
+      "name": "Lichter zur Gruppe hinzufügen",
+      "description": "Fügt eines oder mehrere Lichter zur Mitgliederliste der Gruppe hinzu. Lichter, die bereits in der Gruppe sind, werden ignoriert. Lichter, die zu einer anderen Relativen Lichtgruppe gehören, werden abgelehnt, um zirkuläre Referenzen zu verhindern.",
+      "fields": {
+        "entities": {
+          "name": "Lichter zum Hinzufügen",
+          "description": "Eine oder mehrere Licht-Entitäten, die zur Gruppe hinzugefügt werden sollen."
+        }
+      }
+    },
+    "remove_lights": {
+      "name": "Lichter aus der Gruppe entfernen",
+      "description": "Entfernt eines oder mehrere Lichter aus der Mitgliederliste der Gruppe. Lichter, die nicht in der Gruppe sind, werden ignoriert. Die Gruppe darf nicht leer bleiben; der Aufruf wird abgelehnt, falls die Liste anschließend leer wäre.",
+      "fields": {
+        "entities": {
+          "name": "Lichter zum Entfernen",
+          "description": "Eine oder mehrere Licht-Entitäten, die aus der Gruppe entfernt werden sollen."
+        }
+      }
+    },
+    "set_lights": {
+      "name": "Lichter der Gruppe ersetzen",
+      "description": "Ersetzt die Mitgliederliste der Gruppe durch die angegebenen Lichter. Die Liste darf nicht leer sein und keine Entitäten enthalten, die zu einer anderen Relativen Lichtgruppe gehören.",
+      "fields": {
+        "entities": {
+          "name": "Lichter",
+          "description": "Neue geordnete Liste von Licht-Entitäten für die Gruppe."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_target": {
+      "message": "Keine Zielgruppen-Entität angegeben. Verwenden Sie 'target.entity_id' mit einer Relativen-Lichtgruppen-Entität."
+    },
+    "no_valid_target": {
+      "message": "Keine der Zielentitäten gehört zu einer geladenen Relativen Lichtgruppe: {entities}."
+    },
+    "no_options": {
+      "message": "Keine Optionen übergeben. Senden Sie mindestens eine Option, die geändert werden soll."
+    },
+    "invalid_entity": {
+      "message": "Ungültige Entitätsreferenz: {entity_id}."
+    },
+    "invalid_domain": {
+      "message": "{entity_id} ist keine Licht-Entität. Es sind nur Entitäten der Domäne 'light' erlaubt."
+    },
+    "self_reference": {
+      "message": "{entity_id} kann nicht Mitglied von sich selbst sein."
+    },
+    "unknown_entity": {
+      "message": "{entity_id} existiert nicht."
+    },
+    "nested_relative_group": {
+      "message": "{entity_id} gehört zu einer anderen Relativen Lichtgruppe; Verschachtelung wird nicht unterstützt."
+    },
+    "invalid_entities": {
+      "message": "Ungültige Entitäten: {error}."
+    },
+    "empty_group": {
+      "message": "Die Gruppe '{group}' darf nicht leer sein."
     }
   }
 }

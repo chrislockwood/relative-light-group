@@ -1,0 +1,134 @@
+set_options:
+  name: Update group options
+  description: >-
+    Update one or more options of a Relative Light Group. Only the keys you send
+    are changed; the rest are preserved. The group is reloaded after a successful change.
+  target:
+    entity:
+      integration: relative_light_group
+      domain: light
+  fields:
+    all:
+      name: All entities must be on
+      description: >-
+        If enabled, the group is considered on only when all members are on.
+        If disabled, the group is on when any member is on.
+      example: false
+      selector:
+        boolean:
+    hide_members:
+      name: Hide members
+      description: >-
+        If enabled, the group's member entities are hidden in the entity registry.
+      example: false
+      selector:
+        boolean:
+    remember_on_state:
+      name: Remember on/off state
+      description: >-
+        If enabled, when the group is turned off and on again, only the lights that were
+        previously on will turn on.
+      example: true
+      selector:
+        boolean:
+    restore_individual_brightness:
+      name: Restore individual brightness
+      description: >-
+        If enabled, when you turn the group off and on again from the group entity,
+        each light that turns on is set to the brightness it had before the group
+        was turned off.
+      example: true
+      selector:
+        boolean:
+    remember_brightness:
+      name: Maintain relative brightness
+      description: >-
+        If enabled, the group keeps brightness ratios between lights. Proportions are
+        preserved even when the group reaches minimum or maximum brightness.
+      example: false
+      selector:
+        boolean:
+    debounce_enabled:
+      name: Enable optimistic state debounce
+      description: >-
+        If enabled, the group ignores state updates from members for a short period
+        after a command is sent, preventing the UI slider from jumping.
+      example: true
+      selector:
+        boolean:
+    debounce_time:
+      name: Debounce time
+      description: >-
+        Milliseconds to ignore member state updates after a group command (only
+        effective when the optimistic debounce is enabled).
+      example: 2000
+      selector:
+        number:
+          min: 0
+          max: 10000
+          step: 100
+          unit_of_measurement: ms
+          mode: box
+
+add_lights:
+  name: Add lights to group
+  description: >-
+    Append one or more lights to the group's member list. Lights already in the
+    group are ignored. Lights that belong to another Relative Light Group are
+    rejected to prevent circular references.
+  target:
+    entity:
+      integration: relative_light_group
+      domain: light
+  fields:
+    entities:
+      name: Lights to add
+      description: One or more light entities to add to the group.
+      required: true
+      example: "[light.lampara_lectura, light.aplique_pared]"
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+remove_lights:
+  name: Remove lights from group
+  description: >-
+    Remove one or more lights from the group's member list. Lights not in the
+    group are ignored. The group cannot be left empty; the call is rejected if
+    the resulting list would be empty.
+  target:
+    entity:
+      integration: relative_light_group
+      domain: light
+  fields:
+    entities:
+      name: Lights to remove
+      description: One or more light entities to remove from the group.
+      required: true
+      example: "[light.aplique_pared]"
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+set_lights:
+  name: Replace group lights
+  description: >-
+    Replace the group's member list with the provided lights. The list cannot
+    be empty and cannot contain entities that belong to another Relative Light
+    Group.
+  target:
+    entity:
+      integration: relative_light_group
+      domain: light
+  fields:
+    entities:
+      name: Lights
+      description: New ordered list of light entities for the group.
+      required: true
+      example: "[light.lampara_lectura, light.aplique_pared]"
+      selector:
+        entity:
+          domain: light
+          multiple: true

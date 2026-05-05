@@ -10,11 +10,12 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.const import CONF_ENTITIES
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er, selector
 from homeassistant.helpers.schema_config_entry_flow import (
     SchemaCommonFlowHandler,
     SchemaConfigFlowHandler,
+    SchemaFlowError,
     SchemaFlowFormStep,
     SchemaOptionsFlowHandler,
     entity_selector_without_own_entities,
@@ -32,6 +33,7 @@ from .const import (
 )
 from .entity import GroupEntity
 from .light import async_create_preview_light
+from .services import validate_member_entities
 
 
 def light_config_schema() -> vol.Schema:
@@ -116,9 +118,46 @@ async def light_options_schema(
 
 LIGHT_CONFIG_SCHEMA = light_config_schema()
 
+
+async def _async_validate_entities(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Reject members with invalid domain, self-references or nested groups.
+
+    Runs after the schema validates types/format. Maps validation errors to
+    `SchemaFlowError` so the form re-renders with a localized error.
+    """
+    entities = user_input.get(CONF_ENTITIES, [])
+
+    own_entity_ids: set[str] = set()
+    parent = handler.parent_handler
+    if isinstance(parent, SchemaOptionsFlowHandler):
+        registry = er.async_get(handler.hass)
+        own_entity_ids = {
+            entry.entity_id
+            for entry in er.async_entries_for_config_entry(
+                registry, parent.config_entry.entry_id
+            )
+        }
+
+    try:
+        validated = validate_member_entities(
+            handler.hass, list(entities), own_entity_ids
+        )
+    except ServiceValidationError as err:
+        raise SchemaFlowError(err.translation_key or "invalid_entities") from err
+
+    if not validated:
+        raise SchemaFlowError("empty_group")
+
+    user_input[CONF_ENTITIES] = validated
+    return user_input
+
+
 CONFIG_FLOW = {
     "user": SchemaFlowFormStep(
         LIGHT_CONFIG_SCHEMA,
+        validate_user_input=_async_validate_entities,
         preview="relative_light_group",
     ),
 }
@@ -126,6 +165,7 @@ CONFIG_FLOW = {
 OPTIONS_FLOW = {
     "init": SchemaFlowFormStep(
         light_options_schema,
+        validate_user_input=_async_validate_entities,
         preview="relative_light_group",
     ),
 }

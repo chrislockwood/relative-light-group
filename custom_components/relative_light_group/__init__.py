@@ -10,6 +10,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from . import config_flow as config_flow_pre_import  # noqa: F401
 from .const import CONF_HIDE_MEMBERS, DOMAIN
+from .services import async_register_services
 
 
 PLATFORMS = [Platform.LIGHT]
@@ -17,6 +18,8 @@ PLATFORMS = [Platform.LIGHT]
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Relative Groups integration."""
+    hass.data.setdefault(DOMAIN, {})
+    async_register_services(hass)
     return True
 
 
