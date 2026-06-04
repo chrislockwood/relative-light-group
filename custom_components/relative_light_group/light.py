@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, deque
+from dataclasses import dataclass
 from datetime import datetime
 import itertools
 import logging
@@ -119,6 +120,15 @@ VISUAL_ATTRIBUTES = frozenset(
 )
 
 
+@dataclass(slots=True)
+class CommandReadiness:
+    """Execution mode resolved for a group command."""
+
+    optimistic_mode: bool
+    debounce_mode: bool
+    optimistic_brightness: int | None = None
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -214,9 +224,11 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         self._remember_on_state = remember_on_state
         self._remembered_lights: list[str] | None = None
+        self._remembered_lights_consistent = False
 
         self._restore_individual_brightness = restore_individual_brightness
         self._remembered_brightness: dict[str, int] = {}
+        self._remembered_brightness_consistent = False
 
         self._remember_brightness = remember_brightness
         self._base_brightness: dict[str, int] = {}
@@ -225,6 +237,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         self._debounce_enabled = debounce_enabled
         self._debounce_time = debounce_time
         self._last_command_time = 0.0
+        self._last_command_debounce_eligible = False
         self._debounce_sync_unsub: CALLBACK_TYPE | None = None
 
         self._attr_color_mode = ColorMode.UNKNOWN
@@ -245,6 +258,215 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         if self._debounce_sync_unsub is not None:
             self._debounce_sync_unsub()
             self._debounce_sync_unsub = None
+
+    @callback
+    def _get_member_states(self) -> list:
+        """Return current states for all resolvable group members."""
+        return [
+            state
+            for entity_id in self._entity_ids
+            if (state := self.hass.states.get(entity_id)) is not None
+        ]
+
+    @callback
+    def _has_complete_valid_member_state(self, states: list) -> bool:
+        """Return True when every member has a concrete usable state."""
+        return len(states) == len(self._entity_ids) and all(
+            state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE) for state in states
+        )
+
+    def _get_valid_remembered_lights(self) -> list[str] | None:
+        """Return remembered lights only when they match current membership."""
+        if self._remembered_lights is None:
+            return None
+
+        allowed = set(self._entity_ids)
+        seen: set[str] = set()
+        remembered: list[str] = []
+
+        for entity_id in self._remembered_lights:
+            if entity_id not in allowed or entity_id in seen:
+                return None
+            seen.add(entity_id)
+            remembered.append(entity_id)
+
+        return remembered
+
+    def _resolve_turn_on_target_entity_ids(self) -> list[str]:
+        """Resolve the actual targets used for a group turn_on."""
+        remembered = self._get_valid_remembered_lights()
+        if self._remember_on_state and self._remembered_lights_consistent and remembered:
+            return remembered
+        return self._entity_ids
+
+    def _has_consistent_turn_on_targets(self) -> bool:
+        """Return True when turn_on targets are known without fallback guesses."""
+        if not self._remember_on_state:
+            return True
+
+        if not self._remembered_lights_consistent:
+            return False
+
+        remembered = self._get_valid_remembered_lights()
+        return bool(remembered)
+
+    def _state_supports_brightness(self, state: Any) -> bool | None:
+        """Infer whether a member should contribute to group brightness."""
+        if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return None
+
+        if state.attributes.get(ATTR_BRIGHTNESS) is not None:
+            return True
+
+        supported_modes = state.attributes.get(ATTR_SUPPORTED_COLOR_MODES)
+        if supported_modes is not None:
+            return any(mode != ColorMode.ONOFF for mode in supported_modes)
+
+        color_mode = state.attributes.get(ATTR_COLOR_MODE)
+        if color_mode is not None:
+            return color_mode != ColorMode.ONOFF
+
+        return None
+
+    def _get_restore_brightness_readiness(
+        self, target_entity_ids: list[str], states_by_id: dict[str, Any]
+    ) -> tuple[bool, int | None]:
+        """Validate whether restored brightness supports optimistic turn_on."""
+        if not self._remembered_brightness_consistent:
+            return False, None
+
+        brightness_values: list[int] = []
+        brightness_required = False
+
+        for entity_id in target_entity_ids:
+            supports_brightness = self._state_supports_brightness(
+                states_by_id.get(entity_id)
+            )
+            if supports_brightness is None:
+                return False, None
+            if not supports_brightness:
+                continue
+
+            brightness_required = True
+            stored = self._remembered_brightness.get(entity_id)
+            if stored is None:
+                return False, None
+
+            brightness_values.append(
+                coerce_in(int(stored), BRIGHTNESS_MIN, BRIGHTNESS_MAX)
+            )
+
+        if not brightness_required:
+            return True, None
+        if not brightness_values:
+            return False, None
+
+        return True, int(sum(brightness_values) / len(brightness_values))
+
+    def _seed_runtime_state_from_members(self, states: list, on_states: list) -> None:
+        """Derive runtime-only snapshots from real member state when possible."""
+        if not self._has_complete_valid_member_state(states) or not on_states:
+            return
+
+        on_entity_ids = [state.entity_id for state in on_states]
+
+        if self._remember_on_state and not self._has_consistent_turn_on_targets():
+            self._remembered_lights = on_entity_ids
+            self._remembered_lights_consistent = True
+
+        if self._restore_individual_brightness:
+            restore_ready, _ = self._get_restore_brightness_readiness(
+                on_entity_ids, {state.entity_id: state for state in states}
+            )
+            if not restore_ready:
+                derived_brightness = {
+                    state.entity_id: int(brightness)
+                    for state in on_states
+                    if (brightness := state.attributes.get(ATTR_BRIGHTNESS)) is not None
+                }
+                if derived_brightness:
+                    self._remembered_brightness = derived_brightness
+                    self._remembered_brightness_consistent = True
+
+    def _assess_turn_on_readiness(
+        self, data: dict[str, Any], was_off: bool
+    ) -> CommandReadiness:
+        """Decide whether turn_on can safely use optimistic state and debounce."""
+        states = self._get_member_states()
+        on_states = [state for state in states if state.state == STATE_ON]
+        self._seed_runtime_state_from_members(states, on_states)
+
+        if not self._has_complete_valid_member_state(states):
+            return CommandReadiness(False, False)
+
+        if was_off and not self._has_consistent_turn_on_targets():
+            return CommandReadiness(False, False)
+
+        if ATTR_BRIGHTNESS in data:
+            return CommandReadiness(True, self._debounce_enabled, data[ATTR_BRIGHTNESS])
+
+        if was_off:
+            target_entity_ids = self._resolve_turn_on_target_entity_ids()
+            states_by_id = {state.entity_id: state for state in states}
+
+            if self._restore_individual_brightness:
+                restore_ready, optimistic_brightness = (
+                    self._get_restore_brightness_readiness(
+                        target_entity_ids, states_by_id
+                    )
+                )
+                if not restore_ready:
+                    return CommandReadiness(False, False)
+                return CommandReadiness(
+                    True,
+                    self._debounce_enabled,
+                    optimistic_brightness,
+                )
+
+            has_known_brightness_targets = False
+            for entity_id in target_entity_ids:
+                supports_brightness = self._state_supports_brightness(
+                    states_by_id.get(entity_id)
+                )
+                if supports_brightness is None:
+                    return CommandReadiness(False, False)
+                if supports_brightness:
+                    has_known_brightness_targets = True
+
+            if has_known_brightness_targets:
+                return CommandReadiness(False, False)
+
+        return CommandReadiness(True, self._debounce_enabled)
+
+    def _assess_turn_off_readiness(self) -> CommandReadiness:
+        """Decide whether turn_off can safely use optimistic state and debounce."""
+        states = self._get_member_states()
+        if not self._has_complete_valid_member_state(states):
+            return CommandReadiness(False, False)
+        return CommandReadiness(True, self._debounce_enabled)
+
+    def _assess_command_readiness(
+        self, command: str, data: dict[str, Any], *, was_off: bool = False
+    ) -> CommandReadiness:
+        """Resolve the execution mode for a command."""
+        if command == SERVICE_TURN_ON:
+            return self._assess_turn_on_readiness(data, was_off)
+        if command == SERVICE_TURN_OFF:
+            return self._assess_turn_off_readiness()
+        return CommandReadiness(False, False)
+
+    def _prepare_command_execution(self, readiness: CommandReadiness) -> None:
+        """Prime debounce bookkeeping for the command about to run."""
+        self._async_cancel_debounce_sync()
+        self._last_command_debounce_eligible = readiness.debounce_mode
+        self._last_command_time = time.monotonic()
+
+        if (
+            readiness.debounce_mode
+            and self._context
+            and self._context.id not in self._last_command_contexts
+        ):
+            self._last_command_contexts.append(self._context.id)
 
     @callback
     def _async_sync_group_state(self, *, ignore_debounce: bool = False) -> None:
@@ -308,6 +530,9 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         event: Event[EventStateChangedData],
     ) -> bool:
         """Ignore only group-originated member updates during debounce."""
+        if not self._last_command_debounce_eligible:
+            return False
+
         if not self._debounce_enabled or self._debounce_time <= 0:
             return False
 
@@ -430,6 +655,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         """Turn on targets after the group was off; optionally restore saved brightness per member."""
         use_restore = (
             self._restore_individual_brightness
+            and self._remembered_brightness_consistent
             and ATTR_BRIGHTNESS not in data
             and bool(self._remembered_brightness)
         )
@@ -503,29 +729,27 @@ class RelativeLightGroup(GroupEntity, LightEntity):
           - Without remember_brightness: use standard relative algorithm
         - If color/effect is changing: only apply to on lights
         """
-        if self._context and self._context.id not in self._last_command_contexts:
-            self._last_command_contexts.append(self._context.id)
-
-        self._last_command_time = time.monotonic()
-        self._async_cancel_debounce_sync()
-
         data = {
             key: value for key, value in kwargs.items() if key in FORWARDED_ATTRIBUTES
         }
 
         was_off = not self._attr_is_on
+        readiness = self._assess_command_readiness(
+            SERVICE_TURN_ON, data, was_off=was_off
+        )
+        self._prepare_command_execution(readiness)
 
-        # Optimistic state update
-        self._attr_is_on = True
-        if ATTR_BRIGHTNESS in data:
-            self._attr_brightness = data[ATTR_BRIGHTNESS]
-        if ATTR_HS_COLOR in data:
-            self._attr_hs_color = data[ATTR_HS_COLOR]
-        if ATTR_RGB_COLOR in data:
-            self._attr_rgb_color = data[ATTR_RGB_COLOR]
-        if ATTR_COLOR_TEMP_KELVIN in data:
-            self._attr_color_temp_kelvin = data[ATTR_COLOR_TEMP_KELVIN]
-        self._async_write_optimistic_state()
+        if readiness.optimistic_mode:
+            self._attr_is_on = True
+            if readiness.optimistic_brightness is not None:
+                self._attr_brightness = readiness.optimistic_brightness
+            if ATTR_HS_COLOR in data:
+                self._attr_hs_color = data[ATTR_HS_COLOR]
+            if ATTR_RGB_COLOR in data:
+                self._attr_rgb_color = data[ATTR_RGB_COLOR]
+            if ATTR_COLOR_TEMP_KELVIN in data:
+                self._attr_color_temp_kelvin = data[ATTR_COLOR_TEMP_KELVIN]
+            self._async_write_optimistic_state()
 
         on_lights = self._get_on_lights()
         has_brightness = ATTR_BRIGHTNESS in data
@@ -534,10 +758,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         try:
             # Case 1: Group was OFF → turning on
             if was_off:
-                if self._remember_on_state and self._remembered_lights:
-                    target_entity_ids = self._remembered_lights
-                else:
-                    target_entity_ids = self._entity_ids
+                target_entity_ids = self._resolve_turn_on_target_entity_ids()
 
                 await self._async_turn_on_targets_from_group_off(data, target_entity_ids)
                 return
@@ -589,7 +810,10 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 context=self._context,
             )
         finally:
-            self._async_schedule_post_command_sync()
+            if readiness.debounce_mode:
+                self._async_schedule_post_command_sync()
+            else:
+                self._async_sync_group_state(ignore_debounce=True)
 
     async def _apply_relative_brightness(
         self, data: dict[str, Any], on_lights: list
@@ -688,17 +912,19 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Forward the turn_off command to all lights in the light group."""
-        if self._context and self._context.id not in self._last_command_contexts:
-            self._last_command_contexts.append(self._context.id)
+        readiness = self._assess_command_readiness(SERVICE_TURN_OFF, {})
+        self._prepare_command_execution(readiness)
+        if readiness.optimistic_mode:
+            self._attr_is_on = False
+            self._async_write_optimistic_state()
 
-        self._last_command_time = time.monotonic()
-        self._async_cancel_debounce_sync()
-        self._attr_is_on = False
-        self._async_write_optimistic_state()
+        states = self._get_member_states()
+        state_snapshot_consistent = self._has_complete_valid_member_state(states)
 
         # Remember which lights are on before turning off
         if self._remember_on_state:
             self._remembered_lights = self._get_on_entity_ids()
+            self._remembered_lights_consistent = state_snapshot_consistent
             _LOGGER.debug("Remembered on lights: %s", self._remembered_lights)
 
         # Snapshot brightness from current HA state before members change (avoids races).
@@ -708,9 +934,11 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 bri = state.attributes.get(ATTR_BRIGHTNESS)
                 if bri is not None:
                     self._remembered_brightness[state.entity_id] = int(bri)
+            self._remembered_brightness_consistent = state_snapshot_consistent
             _LOGGER.debug("Remembered brightness: %s", self._remembered_brightness)
         else:
             self._remembered_brightness.clear()
+            self._remembered_brightness_consistent = False
 
         data = {ATTR_ENTITY_ID: self._entity_ids}
 
@@ -726,7 +954,10 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 context=self._context,
             )
         finally:
-            self._async_schedule_post_command_sync()
+            if readiness.debounce_mode:
+                self._async_schedule_post_command_sync()
+            else:
+                self._async_sync_group_state(ignore_debounce=True)
 
     @callback
     def async_update_group_state(self, *, ignore_debounce: bool = False) -> bool:
@@ -756,6 +987,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         # Brightness is calculated only from ON lights
         self._attr_brightness = reduce_attribute(on_states, ATTR_BRIGHTNESS)
+        self._seed_runtime_state_from_members(states, on_states)
 
         # Update base brightness from external changes only.
         # Check each light's state context to see if it was driven by a group command.
