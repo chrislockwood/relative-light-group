@@ -43,7 +43,14 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
 )
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    Context,
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    callback,
+)
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_call_later
@@ -240,30 +247,72 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._debounce_sync_unsub = None
 
     @callback
-    def _async_schedule_member_sync_after_debounce(self) -> None:
-        """When member updates are ignored during debounce, sync once it ends."""
+    def _async_sync_group_state(self, *, ignore_debounce: bool = False) -> None:
+        """Refresh derived state and write it if the update succeeded."""
+        if not self.hass.is_running:
+            return
+        if self.async_update_group_state(ignore_debounce=ignore_debounce):
+            self.async_write_ha_state()
+
+    @callback
+    def _async_schedule_post_command_sync(self) -> None:
+        """Sync once after the current command has had time to settle."""
         if self._debounce_sync_unsub is not None:
             return
+
+        if not self._debounce_enabled or self._debounce_time <= 0:
+            self._async_sync_group_state(ignore_debounce=True)
+            return
+
         remaining = self._debounce_time / 1000 - (
             time.monotonic() - self._last_command_time
         )
         if remaining <= 0:
-            if self.async_update_group_state():
-                self.async_write_ha_state()
+            self._async_sync_group_state(ignore_debounce=True)
             return
 
         @callback
         def _sync(_dt: datetime) -> None:
             self._debounce_sync_unsub = None
-            if self._debounce_enabled and (
-                time.monotonic() - self._last_command_time < self._debounce_time / 1000
-            ):
-                self._async_schedule_member_sync_after_debounce()
-                return
-            if self.async_update_group_state():
-                self.async_write_ha_state()
+            self._async_sync_group_state(ignore_debounce=True)
 
         self._debounce_sync_unsub = async_call_later(self.hass, remaining, _sync)
+
+    def _context_belongs_to_group_command(self, context: Context | None) -> bool:
+        """Return True if the context was produced by a recent group command."""
+        if context is None:
+            return False
+        return (
+            context.id in self._last_command_contexts
+            or context.parent_id in self._last_command_contexts
+        )
+
+    def _event_context_belongs_to_group_command(
+        self, event: Event[EventStateChangedData]
+    ) -> bool:
+        """Return True if the member event came from this group."""
+        new_state = event.data.get("new_state")
+        if new_state is not None and new_state.context is not None:
+            return self._context_belongs_to_group_command(new_state.context)
+        return self._context_belongs_to_group_command(event.context)
+
+    @callback
+    def async_should_defer_state_change(
+        self,
+        event: Event[EventStateChangedData],
+    ) -> bool:
+        """Ignore only group-originated member updates during debounce."""
+        if not self._debounce_enabled or self._debounce_time <= 0:
+            return False
+
+        if time.monotonic() - self._last_command_time >= self._debounce_time / 1000:
+            return False
+
+        if not self._event_context_belongs_to_group_command(event):
+            return False
+
+        self._async_schedule_post_command_sync()
+        return True
 
     def _get_on_lights(self) -> list:
         """Get list of currently on light states."""
@@ -475,62 +524,65 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         has_brightness = ATTR_BRIGHTNESS in data
         has_visual_attrs = any(key in data for key in VISUAL_ATTRIBUTES)
 
-        # Case 1: Group was OFF → turning on
-        if was_off:
-            if self._remember_on_state and self._remembered_lights:
-                target_entity_ids = self._remembered_lights
-            else:
-                target_entity_ids = self._entity_ids
+        try:
+            # Case 1: Group was OFF → turning on
+            if was_off:
+                if self._remember_on_state and self._remembered_lights:
+                    target_entity_ids = self._remembered_lights
+                else:
+                    target_entity_ids = self._entity_ids
 
-            await self._async_turn_on_targets_from_group_off(data, target_entity_ids)
-            return
+                await self._async_turn_on_targets_from_group_off(data, target_entity_ids)
+                return
 
-        # Case 2: Group is ON and brightness is being changed
-        if has_brightness and on_lights:
-            if self._remember_brightness:
-                # Use base-relative algorithm (preserves ratios)
-                await self._apply_brightness_with_base(
-                    data, on_lights, data[ATTR_BRIGHTNESS]
+            # Case 2: Group is ON and brightness is being changed
+            if has_brightness and on_lights:
+                if self._remember_brightness:
+                    # Use base-relative algorithm (preserves ratios)
+                    await self._apply_brightness_with_base(
+                        data, on_lights, data[ATTR_BRIGHTNESS]
+                    )
+
+                else:
+                    # Standard relative algorithm
+                    await self._apply_relative_brightness(data, on_lights)
+                return
+
+            # Case 3: Group is ON, no brightness change, but visual attributes
+            if has_visual_attrs and on_lights:
+                on_entity_ids = [state.entity_id for state in on_lights]
+                visual_data = {
+                    key: value
+                    for key, value in data.items()
+                    if key in VISUAL_ATTRIBUTES or key == ATTR_TRANSITION
+                }
+                visual_data[ATTR_ENTITY_ID] = on_entity_ids
+
+                _LOGGER.debug("Visual-only change to on lights: %s", visual_data)
+
+                await self.hass.services.async_call(
+                    light.DOMAIN,
+                    SERVICE_TURN_ON,
+                    visual_data,
+                    blocking=True,
+                    context=self._context,
                 )
+                return
 
-            else:
-                # Standard relative algorithm
-                await self._apply_relative_brightness(data, on_lights)
-            return
+            # Case 4: Fallback – no special handling needed
+            data[ATTR_ENTITY_ID] = self._entity_ids
 
-        # Case 3: Group is ON, no brightness change, but visual attributes
-        if has_visual_attrs and on_lights:
-            on_entity_ids = [state.entity_id for state in on_lights]
-            visual_data = {
-                key: value
-                for key, value in data.items()
-                if key in VISUAL_ATTRIBUTES or key == ATTR_TRANSITION
-            }
-            visual_data[ATTR_ENTITY_ID] = on_entity_ids
-
-            _LOGGER.debug("Visual-only change to on lights: %s", visual_data)
+            _LOGGER.debug("Forwarded turn_on command: %s", data)
 
             await self.hass.services.async_call(
                 light.DOMAIN,
                 SERVICE_TURN_ON,
-                visual_data,
+                data,
                 blocking=True,
                 context=self._context,
             )
-            return
-
-        # Case 4: Fallback – no special handling needed
-        data[ATTR_ENTITY_ID] = self._entity_ids
-
-        _LOGGER.debug("Forwarded turn_on command: %s", data)
-
-        await self.hass.services.async_call(
-            light.DOMAIN,
-            SERVICE_TURN_ON,
-            data,
-            blocking=True,
-            context=self._context,
-        )
+        finally:
+            self._async_schedule_post_command_sync()
 
     async def _apply_relative_brightness(
         self, data: dict[str, Any], on_lights: list
@@ -657,24 +709,20 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         if ATTR_TRANSITION in kwargs:
             data[ATTR_TRANSITION] = kwargs[ATTR_TRANSITION]
 
-        await self.hass.services.async_call(
-            light.DOMAIN,
-            SERVICE_TURN_OFF,
-            data,
-            blocking=True,
-            context=self._context,
-        )
+        try:
+            await self.hass.services.async_call(
+                light.DOMAIN,
+                SERVICE_TURN_OFF,
+                data,
+                blocking=True,
+                context=self._context,
+            )
+        finally:
+            self._async_schedule_post_command_sync()
 
     @callback
-    def async_update_group_state(self) -> bool:
+    def async_update_group_state(self, *, ignore_debounce: bool = False) -> bool:
         """Query all members and determine the light group state."""
-        now_m = time.monotonic()
-        debounce_s = self._debounce_time / 1000
-        if self._debounce_enabled and (now_m - self._last_command_time < debounce_s):
-            self._async_schedule_member_sync_after_debounce()
-            return False
-
-        self._async_cancel_debounce_sync()
         self._update_assumed_state_from_members()
 
         states = [
@@ -684,7 +732,8 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         ]
         on_states = [state for state in states if state.state == STATE_ON]
 
-        valid_state = self.mode(
+        complete_member_state = len(states) == len(self._entity_ids)
+        valid_state = complete_member_state and all(
             state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE) for state in states
         )
 
@@ -704,8 +753,8 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         # Check each light's state context to see if it was driven by a group command.
         if self._remember_brightness:
             for state in on_states:
-                # If the context is missing, or not generated by the group, it's an external change.
-                if not state.context or state.context.id not in self._last_command_contexts:
+                # Only external changes should redefine the remembered brightness base.
+                if not self._context_belongs_to_group_command(state.context):
                     brightness = state.attributes.get(ATTR_BRIGHTNESS)
                     if brightness is not None:
                         self._base_brightness[state.entity_id] = int(brightness)

@@ -77,6 +77,8 @@ class GroupEntity(Entity):
             self.async_update_supported_features(
                 event.data["entity_id"], event.data["new_state"]
             )
+            if self.async_should_defer_state_change(event):
+                return
             self.async_defer_or_update_ha_state()
 
         self.async_on_remove(
@@ -101,13 +103,21 @@ class GroupEntity(Entity):
         if self.async_update_group_state():
             self.async_write_ha_state()
 
+    @callback
+    def async_should_defer_state_change(
+        self,
+        event: Event[EventStateChangedData],
+    ) -> bool:
+        """Return True when a member event should be handled later."""
+        return False
+
     @abstractmethod
     @callback
-    def async_update_group_state(self) -> bool:
+    def async_update_group_state(self, *, ignore_debounce: bool = False) -> bool:
         """Refresh state from member entities.
 
-        Return False if the update was skipped (e.g. optimistic debounce);
-        callers must not call async_write_ha_state() in that case.
+        Return False if the update was skipped for any reason; callers must not
+        call async_write_ha_state() in that case.
         """
 
     @callback
