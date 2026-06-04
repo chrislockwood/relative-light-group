@@ -255,6 +255,12 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self.async_write_ha_state()
 
     @callback
+    def _async_write_optimistic_state(self) -> None:
+        """Publish the optimistic group state immediately."""
+        if self.hass.is_running:
+            self.async_write_ha_state()
+
+    @callback
     def _async_schedule_post_command_sync(self) -> None:
         """Sync once after the current command has had time to settle."""
         if self._debounce_sync_unsub is not None:
@@ -519,6 +525,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._attr_rgb_color = data[ATTR_RGB_COLOR]
         if ATTR_COLOR_TEMP_KELVIN in data:
             self._attr_color_temp_kelvin = data[ATTR_COLOR_TEMP_KELVIN]
+        self._async_write_optimistic_state()
 
         on_lights = self._get_on_lights()
         has_brightness = ATTR_BRIGHTNESS in data
@@ -687,6 +694,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         self._last_command_time = time.monotonic()
         self._async_cancel_debounce_sync()
         self._attr_is_on = False
+        self._async_write_optimistic_state()
 
         # Remember which lights are on before turning off
         if self._remember_on_state:
