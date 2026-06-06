@@ -35,14 +35,15 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    ATTR_ASSUMED_STATE,
     ATTR_ENTITY_ID,
     ATTR_SUPPORTED_FEATURES,
     CONF_ENTITIES,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
+    STATE_OFF,
     STATE_ON,
     STATE_UNAVAILABLE,
-    STATE_UNKNOWN,
 )
 from homeassistant.core import (
     CALLBACK_TYPE,
@@ -50,6 +51,7 @@ from homeassistant.core import (
     Event,
     EventStateChangedData,
     HomeAssistant,
+    State,
     callback,
 )
 from homeassistant.helpers import entity_registry as er
@@ -119,6 +121,8 @@ VISUAL_ATTRIBUTES = frozenset(
     }
 )
 
+VALID_MEMBER_STATES = frozenset({STATE_ON, STATE_OFF})
+
 
 @dataclass(slots=True)
 class CommandReadiness:
@@ -127,6 +131,17 @@ class CommandReadiness:
     optimistic_mode: bool
     debounce_mode: bool
     optimistic_brightness: int | None = None
+
+
+@dataclass(slots=True)
+class MemberStateSnapshot:
+    """Resolved view of the group's members for state-based decisions."""
+
+    enabled_entity_ids: list[str]
+    enabled_states: list[State]
+    valid_states: list[State]
+    on_states: list[State]
+    valid_states_by_id: dict[str, State]
 
 
 async def async_setup_entry(
@@ -260,19 +275,65 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._debounce_sync_unsub = None
 
     @callback
-    def _get_member_states(self) -> list:
-        """Return current states for all resolvable group members."""
+    def _update_assumed_state_from_members(self) -> None:
+        """Update assumed_state based only on enabled members."""
+        self._attr_assumed_state = False
+        for entity_id in self._get_enabled_entity_ids():
+            if (state := self.hass.states.get(entity_id)) is None:
+                continue
+            if state.attributes.get(ATTR_ASSUMED_STATE):
+                self._attr_assumed_state = True
+                return
+
+    @callback
+    def _is_member_enabled(self, entity_id: str) -> bool:
+        """Return True when the member is not disabled in the entity registry."""
+        registry_entry = er.async_get(self.hass).async_get(entity_id)
+        return registry_entry is None or registry_entry.disabled_by is None
+
+    @callback
+    def _get_enabled_entity_ids(self) -> list[str]:
+        """Return configured member IDs excluding disabled entities."""
         return [
-            state
+            entity_id
             for entity_id in self._entity_ids
-            if (state := self.hass.states.get(entity_id)) is not None
+            if self._is_member_enabled(entity_id)
         ]
 
     @callback
-    def _has_complete_valid_member_state(self, states: list) -> bool:
-        """Return True when every member has a concrete usable state."""
-        return len(states) == len(self._entity_ids) and all(
-            state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE) for state in states
+    def _get_member_snapshot(self) -> MemberStateSnapshot:
+        """Collect enabled members and classify which ones have a valid light state."""
+        enabled_entity_ids: list[str] = []
+        enabled_states: list[State] = []
+        valid_states: list[State] = []
+        on_states: list[State] = []
+        valid_states_by_id: dict[str, State] = {}
+
+        for entity_id in self._entity_ids:
+            if not self._is_member_enabled(entity_id):
+                continue
+
+            enabled_entity_ids.append(entity_id)
+
+            if (state := self.hass.states.get(entity_id)) is None:
+                continue
+
+            enabled_states.append(state)
+
+            if state.state not in VALID_MEMBER_STATES:
+                continue
+
+            valid_states.append(state)
+            valid_states_by_id[state.entity_id] = state
+            if state.state == STATE_ON:
+                on_states.append(state)
+
+        return MemberStateSnapshot(
+            enabled_entity_ids=enabled_entity_ids,
+            enabled_states=enabled_states,
+            valid_states=valid_states,
+            on_states=on_states,
+            valid_states_by_id=valid_states_by_id,
         )
 
     def _get_valid_remembered_lights(self) -> list[str] | None:
@@ -280,7 +341,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         if self._remembered_lights is None:
             return None
 
-        allowed = set(self._entity_ids)
+        allowed = set(self._get_enabled_entity_ids())
         seen: set[str] = set()
         remembered: list[str] = []
 
@@ -297,7 +358,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         remembered = self._get_valid_remembered_lights()
         if self._remember_on_state and self._remembered_lights_consistent and remembered:
             return remembered
-        return self._entity_ids
+        return self._get_enabled_entity_ids()
 
     def _has_consistent_turn_on_targets(self) -> bool:
         """Return True when turn_on targets are known without fallback guesses."""
@@ -312,7 +373,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
     def _state_supports_brightness(self, state: Any) -> bool | None:
         """Infer whether a member should contribute to group brightness."""
-        if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+        if state is None or state.state not in VALID_MEMBER_STATES:
             return None
 
         if state.attributes.get(ATTR_BRIGHTNESS) is not None:
@@ -343,7 +404,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 states_by_id.get(entity_id)
             )
             if supports_brightness is None:
-                return False, None
+                continue
             if not supports_brightness:
                 continue
 
@@ -363,12 +424,12 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         return True, int(sum(brightness_values) / len(brightness_values))
 
-    def _seed_runtime_state_from_members(self, states: list, on_states: list) -> None:
+    def _seed_runtime_state_from_members(self, snapshot: MemberStateSnapshot) -> None:
         """Derive runtime-only snapshots from real member state when possible."""
-        if not self._has_complete_valid_member_state(states) or not on_states:
+        if not snapshot.valid_states or not snapshot.on_states:
             return
 
-        on_entity_ids = [state.entity_id for state in on_states]
+        on_entity_ids = [state.entity_id for state in snapshot.on_states]
 
         if self._remember_on_state and not self._has_consistent_turn_on_targets():
             self._remembered_lights = on_entity_ids
@@ -376,12 +437,12 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         if self._restore_individual_brightness:
             restore_ready, _ = self._get_restore_brightness_readiness(
-                on_entity_ids, {state.entity_id: state for state in states}
+                on_entity_ids, snapshot.valid_states_by_id
             )
             if not restore_ready:
                 derived_brightness = {
                     state.entity_id: int(brightness)
-                    for state in on_states
+                    for state in snapshot.on_states
                     if (brightness := state.attributes.get(ATTR_BRIGHTNESS)) is not None
                 }
                 if derived_brightness:
@@ -392,11 +453,10 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         self, data: dict[str, Any], was_off: bool
     ) -> CommandReadiness:
         """Decide whether turn_on can safely use optimistic state and debounce."""
-        states = self._get_member_states()
-        on_states = [state for state in states if state.state == STATE_ON]
-        self._seed_runtime_state_from_members(states, on_states)
+        snapshot = self._get_member_snapshot()
+        self._seed_runtime_state_from_members(snapshot)
 
-        if not self._has_complete_valid_member_state(states):
+        if not snapshot.valid_states:
             return CommandReadiness(False, False)
 
         if was_off and not self._has_consistent_turn_on_targets():
@@ -407,7 +467,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         if was_off:
             target_entity_ids = self._resolve_turn_on_target_entity_ids()
-            states_by_id = {state.entity_id: state for state in states}
+            states_by_id = snapshot.valid_states_by_id
 
             if self._restore_individual_brightness:
                 restore_ready, optimistic_brightness = (
@@ -429,7 +489,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                     states_by_id.get(entity_id)
                 )
                 if supports_brightness is None:
-                    return CommandReadiness(False, False)
+                    continue
                 if supports_brightness:
                     has_known_brightness_targets = True
 
@@ -440,8 +500,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
     def _assess_turn_off_readiness(self) -> CommandReadiness:
         """Decide whether turn_off can safely use optimistic state and debounce."""
-        states = self._get_member_states()
-        if not self._has_complete_valid_member_state(states):
+        if not self._get_member_snapshot().valid_states:
             return CommandReadiness(False, False)
         return CommandReadiness(True, self._debounce_enabled)
 
@@ -547,16 +606,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
     def _get_on_lights(self) -> list:
         """Get list of currently on light states."""
-        return [
-            state
-            for entity_id in self._entity_ids
-            if (state := self.hass.states.get(entity_id)) is not None
-            and state.state == STATE_ON
-        ]
-
-    def _get_on_entity_ids(self) -> list[str]:
-        """Get list of currently on light entity IDs."""
-        return [state.entity_id for state in self._get_on_lights()]
+        return self._get_member_snapshot().on_states
 
     def _ensure_base_brightness(self, on_lights: list) -> None:
         """Ensure base brightness is captured for all on lights."""
@@ -653,6 +703,9 @@ class RelativeLightGroup(GroupEntity, LightEntity):
         self, data: dict[str, Any], target_entity_ids: list[str]
     ) -> None:
         """Turn on targets after the group was off; optionally restore saved brightness per member."""
+        if not target_entity_ids:
+            return
+
         use_restore = (
             self._restore_individual_brightness
             and self._remembered_brightness_consistent
@@ -798,7 +851,9 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 return
 
             # Case 4: Fallback – no special handling needed
-            data[ATTR_ENTITY_ID] = self._entity_ids
+            data[ATTR_ENTITY_ID] = self._get_enabled_entity_ids()
+            if not data[ATTR_ENTITY_ID]:
+                return
 
             _LOGGER.debug("Forwarded turn_on command: %s", data)
 
@@ -918,19 +973,19 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._attr_is_on = False
             self._async_write_optimistic_state()
 
-        states = self._get_member_states()
-        state_snapshot_consistent = self._has_complete_valid_member_state(states)
+        snapshot = self._get_member_snapshot()
+        state_snapshot_consistent = bool(snapshot.valid_states)
 
         # Remember which lights are on before turning off
         if self._remember_on_state:
-            self._remembered_lights = self._get_on_entity_ids()
+            self._remembered_lights = [state.entity_id for state in snapshot.on_states]
             self._remembered_lights_consistent = state_snapshot_consistent
             _LOGGER.debug("Remembered on lights: %s", self._remembered_lights)
 
         # Snapshot brightness from current HA state before members change (avoids races).
         if self._restore_individual_brightness:
             self._remembered_brightness = {}
-            for state in self._get_on_lights():
+            for state in snapshot.on_states:
                 bri = state.attributes.get(ATTR_BRIGHTNESS)
                 if bri is not None:
                     self._remembered_brightness[state.entity_id] = int(bri)
@@ -940,12 +995,14 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             self._remembered_brightness.clear()
             self._remembered_brightness_consistent = False
 
-        data = {ATTR_ENTITY_ID: self._entity_ids}
+        data = {ATTR_ENTITY_ID: snapshot.enabled_entity_ids}
 
         if ATTR_TRANSITION in kwargs:
             data[ATTR_TRANSITION] = kwargs[ATTR_TRANSITION]
 
         try:
+            if not data[ATTR_ENTITY_ID]:
+                return
             await self.hass.services.async_call(
                 light.DOMAIN,
                 SERVICE_TURN_OFF,
@@ -963,31 +1020,24 @@ class RelativeLightGroup(GroupEntity, LightEntity):
     def async_update_group_state(self, *, ignore_debounce: bool = False) -> bool:
         """Query all members and determine the light group state."""
         self._update_assumed_state_from_members()
+        snapshot = self._get_member_snapshot()
+        valid_states = snapshot.valid_states
+        on_states = snapshot.on_states
 
-        states = [
-            state
-            for entity_id in self._entity_ids
-            if (state := self.hass.states.get(entity_id)) is not None
-        ]
-        on_states = [state for state in states if state.state == STATE_ON]
-
-        complete_member_state = len(states) == len(self._entity_ids)
-        valid_state = complete_member_state and all(
-            state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE) for state in states
-        )
-
-        if not valid_state:
-            self._attr_is_on = None
+        if valid_states:
+            self._attr_is_on = self.mode(
+                state.state == STATE_ON for state in valid_states
+            )
+            self._attr_available = True
         else:
-            self._attr_is_on = self.mode(state.state == STATE_ON for state in states)
-
-        self._attr_available = any(
-            state.state != STATE_UNAVAILABLE for state in states
-        )
+            self._attr_is_on = None
+            self._attr_available = bool(snapshot.enabled_entity_ids) and any(
+                state.state != STATE_UNAVAILABLE for state in snapshot.enabled_states
+            )
 
         # Brightness is calculated only from ON lights
         self._attr_brightness = reduce_attribute(on_states, ATTR_BRIGHTNESS)
-        self._seed_runtime_state_from_members(states, on_states)
+        self._seed_runtime_state_from_members(snapshot)
 
         # Update base brightness from external changes only.
         # Check each light's state context to see if it was driven by a group command.
@@ -1019,14 +1069,14 @@ class RelativeLightGroup(GroupEntity, LightEntity):
             on_states, ATTR_COLOR_TEMP_KELVIN
         )
         self._attr_min_color_temp_kelvin = reduce_attribute(
-            states, ATTR_MIN_COLOR_TEMP_KELVIN, default=2000, reduce=min
+            valid_states, ATTR_MIN_COLOR_TEMP_KELVIN, default=2000, reduce=min
         )
         self._attr_max_color_temp_kelvin = reduce_attribute(
-            states, ATTR_MAX_COLOR_TEMP_KELVIN, default=6500, reduce=max
+            valid_states, ATTR_MAX_COLOR_TEMP_KELVIN, default=6500, reduce=max
         )
 
         self._attr_effect_list = None
-        all_effect_lists = list(find_state_attributes(states, ATTR_EFFECT_LIST))
+        all_effect_lists = list(find_state_attributes(valid_states, ATTR_EFFECT_LIST))
         if all_effect_lists:
             self._attr_effect_list = list(set().union(*all_effect_lists))
             self._attr_effect_list.sort()
@@ -1042,7 +1092,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
 
         supported_color_modes = {ColorMode.ONOFF}
         all_supported_color_modes = list(
-            find_state_attributes(states, ATTR_SUPPORTED_COLOR_MODES)
+            find_state_attributes(valid_states, ATTR_SUPPORTED_COLOR_MODES)
         )
         if all_supported_color_modes:
             supported_color_modes = filter_supported_color_modes(
@@ -1070,7 +1120,7 @@ class RelativeLightGroup(GroupEntity, LightEntity):
                 self._attr_color_mode = next(iter(supported_color_modes))
 
         self._attr_supported_features = LightEntityFeature(0)
-        for support in find_state_attributes(states, ATTR_SUPPORTED_FEATURES):
+        for support in find_state_attributes(valid_states, ATTR_SUPPORTED_FEATURES):
             self._attr_supported_features |= support
         self._attr_supported_features &= SUPPORT_GROUP_LIGHT
         return True
