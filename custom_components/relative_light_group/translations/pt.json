@@ -11,13 +11,21 @@
           "hide_members": "Ocultar membros",
           "remember_on_state": "Lembrar estado ligado/desligado",
           "restore_individual_brightness": "Restaurar brilho individual",
-          "remember_brightness": "Manter brilho relativo"
+          "remember_brightness": "Manter brilho relativo",
+          "brightness_strategy": "Brilho representativo",
+          "member_diagnostics": "Expor diagnóstico dos membros",
+          "debounce_enabled": "Ativar debounce do estado otimista",
+          "debounce_time": "Tempo de debounce"
         },
         "data_description": {
           "all": "Se ativado, o grupo é considerado ligado apenas quando todos os membros estão ligados. Se desativado, o grupo está ligado quando qualquer membro está ligado.",
           "remember_on_state": "Se ativado, quando o grupo é desligado e ligado novamente, apenas as luzes que estavam previamente ligadas serão ligadas.",
           "restore_individual_brightness": "Se ativado, ao desligar e ligar novamente o grupo pela entidade do grupo, cada luz que acende recupera o brilho que tinha antes do grupo ser desligado. Luzes sem brilho guardado (por exemplo apenas ligado/desligado) acendem como de costume. Se ligar o grupo com um brilho explícito, esse valor é aplicado a todas as luzes alvo.",
-          "remember_brightness": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. Elas são preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo."
+          "remember_brightness": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. Elas são preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo.",
+          "brightness_strategy": "Define como o brilho do grupo é calculado a partir das luzes ligadas. Média é o valor predefinido.",
+          "member_diagnostics": "Se ativado, o grupo expõe atributos compactos com o estado dos membros e brilhos memorizados para diagnóstico.",
+          "debounce_enabled": "Se ativado, o grupo ignora atualizações de estado dos membros por um curto período após enviar um comando, evitando que o slider da UI salte.",
+          "debounce_time": "Número de milissegundos durante os quais as atualizações de estado dos membros são ignoradas."
         }
       }
     },
@@ -28,7 +36,8 @@
       "unknown_entity": "{entity_id} não existe.",
       "nested_relative_group": "{entity_id} pertence a outro Grupo de Luzes Relativo; o aninhamento não é suportado.",
       "empty_group": "O grupo deve conter pelo menos uma luz.",
-      "invalid_entities": "Uma ou mais entidades selecionadas são inválidas."
+      "invalid_entities": "Uma ou mais entidades selecionadas são inválidas.",
+      "invalid_brightness_strategy": "A estratégia de brilho selecionada é inválida."
     }
   },
   "options": {
@@ -40,13 +49,21 @@
           "hide_members": "Ocultar membros",
           "remember_on_state": "Lembrar estado ligado/desligado",
           "restore_individual_brightness": "Restaurar brilho individual",
-          "remember_brightness": "Manter brilho relativo"
+          "remember_brightness": "Manter brilho relativo",
+          "brightness_strategy": "Brilho representativo",
+          "member_diagnostics": "Expor diagnóstico dos membros",
+          "debounce_enabled": "Ativar debounce do estado otimista",
+          "debounce_time": "Tempo de debounce"
         },
         "data_description": {
           "all": "Se ativado, o grupo é considerado ligado apenas quando todos os membros estão ligados. Se desativado, o grupo está ligado quando qualquer membro está ligado.",
           "remember_on_state": "Se ativado, quando o grupo é desligado e ligado novamente, apenas as luzes que estavam previamente ligadas serão ligadas.",
           "restore_individual_brightness": "Se ativado, ao desligar e ligar novamente o grupo pela entidade do grupo, cada luz que acende recupera o brilho que tinha antes do grupo ser desligado. Luzes sem brilho guardado (por exemplo apenas ligado/desligado) acendem como de costume. Se ligar o grupo com um brilho explícito, esse valor é aplicado a todas as luzes alvo.",
-          "remember_brightness": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. Elas são preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo."
+          "remember_brightness": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. Elas são preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo. O brilho individual só pode ser alterado diretamente em cada luz, não a partir do grupo.",
+          "brightness_strategy": "Define como o brilho do grupo é calculado a partir das luzes ligadas. Média é o valor predefinido.",
+          "member_diagnostics": "Se ativado, o grupo expõe atributos compactos com o estado dos membros e brilhos memorizados para diagnóstico.",
+          "debounce_enabled": "Se ativado, o grupo ignora atualizações de estado dos membros por um curto período após enviar um comando, evitando que o slider da UI salte.",
+          "debounce_time": "Número de milissegundos durante os quais as atualizações de estado dos membros são ignoradas."
         }
       }
     },
@@ -57,7 +74,8 @@
       "unknown_entity": "{entity_id} não existe.",
       "nested_relative_group": "{entity_id} pertence a outro Grupo de Luzes Relativo; o aninhamento não é suportado.",
       "empty_group": "O grupo deve conter pelo menos uma luz.",
-      "invalid_entities": "Uma ou mais entidades selecionadas são inválidas."
+      "invalid_entities": "Uma ou mais entidades selecionadas são inválidas.",
+      "invalid_brightness_strategy": "A estratégia de brilho selecionada é inválida."
     }
   },
   "services": {
@@ -84,6 +102,14 @@
         "remember_brightness": {
           "name": "Manter brilho relativo",
           "description": "Se ativado, o grupo mantém as proporções de brilho entre as luzes. São preservadas mesmo quando o grupo atinge o brilho mínimo ou máximo."
+        },
+        "brightness_strategy": {
+          "name": "Brilho representativo",
+          "description": "Define como o brilho do grupo é calculado a partir das luzes ligadas. Média é o valor predefinido."
+        },
+        "member_diagnostics": {
+          "name": "Expor diagnóstico dos membros",
+          "description": "Se ativado, o grupo expõe atributos compactos com o estado dos membros e brilhos memorizados para diagnóstico."
         },
         "debounce_enabled": {
           "name": "Ativar debounce do estado otimista",
@@ -123,6 +149,16 @@
           "name": "Luzes",
           "description": "Nova lista ordenada de entidades de luz para o grupo."
         }
+      }
+    }
+  },
+  "selector": {
+    "brightness_strategy": {
+      "options": {
+        "average": "Média",
+        "median": "Mediana",
+        "max": "Máximo",
+        "min": "Mínimo"
       }
     }
   },

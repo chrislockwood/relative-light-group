@@ -22,18 +22,29 @@ from homeassistant.helpers.schema_config_entry_flow import (
 )
 
 from .const import (
+    BRIGHTNESS_STRATEGIES,
     CONF_ALL,
+    CONF_BRIGHTNESS_STRATEGY,
     CONF_HIDE_MEMBERS,
+    CONF_MEMBER_DIAGNOSTICS,
     CONF_REMEMBER_BRIGHTNESS,
     CONF_REMEMBER_ON_STATE,
     CONF_RESTORE_INDIVIDUAL_BRIGHTNESS,
     CONF_DEBOUNCE_ENABLED,
     CONF_DEBOUNCE_TIME,
+    DEFAULT_BRIGHTNESS_STRATEGY,
+    DEFAULT_DEBOUNCE_ENABLED,
+    DEFAULT_DEBOUNCE_TIME,
+    DEFAULT_MEMBER_DIAGNOSTICS,
     DOMAIN,
 )
 from .entity import GroupEntity
 from .light import async_create_preview_light
 from .services import validate_member_entities
+from .visibility import (
+    restore_member_visibility_if_hidden_by_integration,
+    set_member_visibility,
+)
 
 
 def light_config_schema() -> vol.Schema:
@@ -58,13 +69,28 @@ def light_config_schema() -> vol.Schema:
                 CONF_REMEMBER_BRIGHTNESS, default=False
             ): selector.BooleanSelector(),
             vol.Required(
-                CONF_DEBOUNCE_ENABLED, default=True
+                CONF_BRIGHTNESS_STRATEGY, default=DEFAULT_BRIGHTNESS_STRATEGY
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=list(BRIGHTNESS_STRATEGIES),
+                    translation_key=CONF_BRIGHTNESS_STRATEGY,
+                )
+            ),
+            vol.Required(
+                CONF_MEMBER_DIAGNOSTICS, default=DEFAULT_MEMBER_DIAGNOSTICS
             ): selector.BooleanSelector(),
             vol.Required(
-                CONF_DEBOUNCE_TIME, default=2000
+                CONF_DEBOUNCE_ENABLED, default=DEFAULT_DEBOUNCE_ENABLED
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_DEBOUNCE_TIME, default=DEFAULT_DEBOUNCE_TIME
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    min=0, max=10000, step=100, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="ms"
+                    min=0,
+                    max=10000,
+                    step=100,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="ms",
                 )
             ),
         }
@@ -103,13 +129,28 @@ async def light_options_schema(
                 CONF_REMEMBER_BRIGHTNESS, default=False
             ): selector.BooleanSelector(),
             vol.Required(
-                CONF_DEBOUNCE_ENABLED, default=True
+                CONF_BRIGHTNESS_STRATEGY, default=DEFAULT_BRIGHTNESS_STRATEGY
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=list(BRIGHTNESS_STRATEGIES),
+                    translation_key=CONF_BRIGHTNESS_STRATEGY,
+                )
+            ),
+            vol.Required(
+                CONF_MEMBER_DIAGNOSTICS, default=DEFAULT_MEMBER_DIAGNOSTICS
             ): selector.BooleanSelector(),
             vol.Required(
-                CONF_DEBOUNCE_TIME, default=2000
+                CONF_DEBOUNCE_ENABLED, default=DEFAULT_DEBOUNCE_ENABLED
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_DEBOUNCE_TIME, default=DEFAULT_DEBOUNCE_TIME
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    min=0, max=10000, step=100, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="ms"
+                    min=0,
+                    max=10000,
+                    step=100,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="ms",
                 )
             ),
         }
@@ -150,6 +191,12 @@ async def _async_validate_entities(
 
     if not validated:
         raise SchemaFlowError("empty_group")
+
+    brightness_strategy = user_input.get(
+        CONF_BRIGHTNESS_STRATEGY, DEFAULT_BRIGHTNESS_STRATEGY
+    )
+    if brightness_strategy not in BRIGHTNESS_STRATEGIES:
+        raise SchemaFlowError("invalid_brightness_strategy")
 
     user_input[CONF_ENTITIES] = validated
     return user_input
@@ -197,7 +244,7 @@ class RelativeLightGroupConfigFlowHandler(SchemaConfigFlowHandler, domain=DOMAIN
     def async_config_flow_finished(self, options: Mapping[str, Any]) -> None:
         """Hide the group members if requested."""
         if options.get(CONF_HIDE_MEMBERS, False):
-            _async_hide_members(
+            set_member_visibility(
                 self.hass, options[CONF_ENTITIES], er.RegistryEntryHider.INTEGRATION
             )
 
@@ -207,12 +254,11 @@ class RelativeLightGroupConfigFlowHandler(SchemaConfigFlowHandler, domain=DOMAIN
         hass: HomeAssistant, options: Mapping[str, Any]
     ) -> None:
         """Hide or unhide the group members as requested."""
-        hidden_by = (
-            er.RegistryEntryHider.INTEGRATION
-            if options.get(CONF_HIDE_MEMBERS, False)
-            else None
-        )
-        _async_hide_members(hass, options[CONF_ENTITIES], hidden_by)
+        members = list(options[CONF_ENTITIES])
+        if options.get(CONF_HIDE_MEMBERS, False):
+            set_member_visibility(hass, members, er.RegistryEntryHider.INTEGRATION)
+        else:
+            restore_member_visibility_if_hidden_by_integration(hass, members)
 
     @staticmethod
     async def async_setup_preview(hass: HomeAssistant) -> None:
@@ -226,21 +272,6 @@ class RelativeLightGroupConfigFlowHandler(SchemaConfigFlowHandler, domain=DOMAIN
         )
         PREVIEW_OPTIONS_SCHEMA["light"] = await schema(None)
         websocket_api.async_register_command(hass, ws_start_preview)
-
-
-def _async_hide_members(
-    hass: HomeAssistant,
-    members: list[str],
-    hidden_by: er.RegistryEntryHider | None,
-) -> None:
-    """Hide or unhide group members."""
-    registry = er.async_get(hass)
-    for member in members:
-        if not (entity_id := er.async_resolve_entity_id(registry, member)):
-            continue
-        if entity_id not in registry.entities:
-            continue
-        registry.async_update_entity(entity_id, hidden_by=hidden_by)
 
 
 @websocket_api.websocket_command(

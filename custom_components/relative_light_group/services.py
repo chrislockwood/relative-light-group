@@ -28,14 +28,21 @@ from homeassistant.helpers import (
 )
 
 from .const import (
+    BRIGHTNESS_STRATEGIES,
     CONF_ALL,
+    CONF_BRIGHTNESS_STRATEGY,
     CONF_DEBOUNCE_ENABLED,
     CONF_DEBOUNCE_TIME,
     CONF_HIDE_MEMBERS,
+    CONF_MEMBER_DIAGNOSTICS,
     CONF_REMEMBER_BRIGHTNESS,
     CONF_REMEMBER_ON_STATE,
     CONF_RESTORE_INDIVIDUAL_BRIGHTNESS,
     DOMAIN,
+)
+from .visibility import (
+    restore_member_visibility_if_hidden_by_integration,
+    set_member_visibility,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,6 +62,8 @@ OPTION_KEYS: tuple[str, ...] = (
     CONF_REMEMBER_ON_STATE,
     CONF_RESTORE_INDIVIDUAL_BRIGHTNESS,
     CONF_REMEMBER_BRIGHTNESS,
+    CONF_BRIGHTNESS_STRATEGY,
+    CONF_MEMBER_DIAGNOSTICS,
     CONF_DEBOUNCE_ENABLED,
     CONF_DEBOUNCE_TIME,
 )
@@ -66,6 +75,8 @@ SET_OPTIONS_SCHEMA = cv.make_entity_service_schema(
         vol.Optional(CONF_REMEMBER_ON_STATE): cv.boolean,
         vol.Optional(CONF_RESTORE_INDIVIDUAL_BRIGHTNESS): cv.boolean,
         vol.Optional(CONF_REMEMBER_BRIGHTNESS): cv.boolean,
+        vol.Optional(CONF_BRIGHTNESS_STRATEGY): vol.In(BRIGHTNESS_STRATEGIES),
+        vol.Optional(CONF_MEMBER_DIAGNOSTICS): cv.boolean,
         vol.Optional(CONF_DEBOUNCE_ENABLED): cv.boolean,
         vol.Optional(CONF_DEBOUNCE_TIME): vol.All(
             vol.Coerce(int), vol.Range(min=0, max=10000)
@@ -228,34 +239,6 @@ def _own_entity_ids_for_entry(
     }
 
 
-@callback
-def _set_hidden(
-    hass: HomeAssistant,
-    entity_ids: list[str],
-    hidden_by: er.RegistryEntryHider | None,
-) -> None:
-    registry = er.async_get(hass)
-    for eid in entity_ids:
-        resolved = er.async_resolve_entity_id(registry, eid)
-        if not resolved or resolved not in registry.entities:
-            continue
-        registry.async_update_entity(resolved, hidden_by=hidden_by)
-
-
-@callback
-def _restore_visibility_if_hidden(
-    hass: HomeAssistant, entity_ids: list[str]
-) -> None:
-    registry = er.async_get(hass)
-    for eid in entity_ids:
-        resolved = er.async_resolve_entity_id(registry, eid)
-        if not resolved or resolved not in registry.entities:
-            continue
-        reg_entry = registry.async_get(resolved)
-        if reg_entry and reg_entry.hidden_by == er.RegistryEntryHider.INTEGRATION:
-            registry.async_update_entity(resolved, hidden_by=None)
-
-
 async def _async_apply_member_change(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -274,9 +257,9 @@ async def _async_apply_member_change(
     removed = [eid for eid in old_members if eid not in new_members]
 
     if hide and added:
-        _set_hidden(hass, added, er.RegistryEntryHider.INTEGRATION)
+        set_member_visibility(hass, added, er.RegistryEntryHider.INTEGRATION)
     if removed:
-        _restore_visibility_if_hidden(hass, removed)
+        restore_member_visibility_if_hidden_by_integration(hass, removed)
 
     await hass.config_entries.async_reload(entry.entry_id)
 
@@ -297,9 +280,9 @@ async def _async_apply_options_change(
     if old_hide != new_hide:
         members: list[str] = list(new_options.get(CONF_ENTITIES, []))
         if new_hide:
-            _set_hidden(hass, members, er.RegistryEntryHider.INTEGRATION)
+            set_member_visibility(hass, members, er.RegistryEntryHider.INTEGRATION)
         else:
-            _restore_visibility_if_hidden(hass, members)
+            restore_member_visibility_if_hidden_by_integration(hass, members)
 
     await hass.config_entries.async_reload(entry.entry_id)
 

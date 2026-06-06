@@ -12,6 +12,8 @@
           "remember_on_state": "Recordar estado encendido/apagado",
           "restore_individual_brightness": "Restaurar brillo individual",
           "remember_brightness": "Mantener brillo relativo",
+          "brightness_strategy": "Brillo representativo",
+          "member_diagnostics": "Exponer diagnóstico de miembros",
           "debounce_enabled": "Activar el debounce del estado optimista",
           "debounce_time": "Tiempo de debounce"
         },
@@ -20,6 +22,8 @@
           "remember_on_state": "Si está activado, cuando el grupo se apaga y se vuelve a encender, solo se encenderán las luces que estaban previamente encendidas.",
           "restore_individual_brightness": "Si está activado, al apagar y volver a encender el grupo desde la entidad del grupo, cada luz que se enciende recupera el brillo que tenía antes de apagar el grupo. Las luces sin brillo guardado (por ejemplo solo encendido/apagado) se encienden con su comportamiento habitual. Si enciendes el grupo con un brillo explícito, ese valor se aplica a todas las luces objetivo.",
           "remember_brightness": "Si está activado, el grupo mantiene las proporciones de brillo entre las luces. Se conservan incluso cuando el grupo alcanza el brillo mínimo o máximo. El brillo individual solo puede modificarse directamente en cada luz, no desde el grupo.",
+          "brightness_strategy": "Cómo se calcula el brillo del grupo a partir de las luces encendidas. Promedio es el valor predeterminado.",
+          "member_diagnostics": "Si está activado, el grupo expone atributos compactos con el estado de cada miembro y los brillos recordados para diagnóstico.",
           "debounce_enabled": "Si está activado, el grupo ignora las actualizaciones de estado de los miembros durante un periodo corto después de enviar un comando, evitando que el slider de la interfaz de usuario salte.",
           "debounce_time": "La cantidad de tiempo en milisegundos para ignorar las actualizaciones de estado de los miembros."
         }
@@ -32,7 +36,8 @@
       "unknown_entity": "{entity_id} no existe.",
       "nested_relative_group": "{entity_id} pertenece a otro Grupo de luces relativo; no se admite el anidamiento.",
       "empty_group": "El grupo debe contener al menos una luz.",
-      "invalid_entities": "Una o más entidades seleccionadas no son válidas."
+      "invalid_entities": "Una o más entidades seleccionadas no son válidas.",
+      "invalid_brightness_strategy": "La estrategia de brillo seleccionada no es válida."
     }
   },
   "options": {
@@ -45,6 +50,8 @@
           "remember_on_state": "Recordar estado encendido/apagado",
           "restore_individual_brightness": "Restaurar brillo individual",
           "remember_brightness": "Mantener brillo relativo",
+          "brightness_strategy": "Brillo representativo",
+          "member_diagnostics": "Exponer diagnóstico de miembros",
           "debounce_enabled": "Activar el debounce del estado optimista",
           "debounce_time": "Tiempo de debounce"
         },
@@ -53,6 +60,8 @@
           "remember_on_state": "Si está activado, cuando el grupo se apaga y se vuelve a encender, solo se encenderán las luces que estaban previamente encendidas.",
           "restore_individual_brightness": "Si está activado, al apagar y volver a encender el grupo desde la entidad del grupo, cada luz que se enciende recupera el brillo que tenía antes de apagar el grupo. Las luces sin brillo guardado (por ejemplo solo encendido/apagado) se encienden con su comportamiento habitual. Si enciendes el grupo con un brillo explícito, ese valor se aplica a todas las luces objetivo.",
           "remember_brightness": "Si está activado, el grupo mantiene las proporciones de brillo entre las luces. Se conservan incluso cuando el grupo alcanza el brillo mínimo o máximo. El brillo individual solo puede modificarse directamente en cada luz, no desde el grupo.",
+          "brightness_strategy": "Cómo se calcula el brillo del grupo a partir de las luces encendidas. Promedio es el valor predeterminado.",
+          "member_diagnostics": "Si está activado, el grupo expone atributos compactos con el estado de cada miembro y los brillos recordados para diagnóstico.",
           "debounce_enabled": "Si está activado, el grupo ignora las actualizaciones de estado de los miembros durante un periodo corto después de enviar un comando, evitando que el slider de la interfaz de usuario salte.",
           "debounce_time": "La cantidad de tiempo en milisegundos para ignorar las actualizaciones de estado de los miembros."
         }
@@ -65,7 +74,8 @@
       "unknown_entity": "{entity_id} no existe.",
       "nested_relative_group": "{entity_id} pertenece a otro Grupo de luces relativo; no se admite el anidamiento.",
       "empty_group": "El grupo debe contener al menos una luz.",
-      "invalid_entities": "Una o más entidades seleccionadas no son válidas."
+      "invalid_entities": "Una o más entidades seleccionadas no son válidas.",
+      "invalid_brightness_strategy": "La estrategia de brillo seleccionada no es válida."
     }
   },
   "services": {
@@ -92,6 +102,14 @@
         "remember_brightness": {
           "name": "Mantener brillo relativo",
           "description": "Si está activado, el grupo mantiene las proporciones de brillo entre luces. Se conservan incluso cuando el grupo alcanza el brillo mínimo o máximo."
+        },
+        "brightness_strategy": {
+          "name": "Brillo representativo",
+          "description": "Cómo se calcula el brillo del grupo a partir de las luces encendidas. Promedio es el valor predeterminado."
+        },
+        "member_diagnostics": {
+          "name": "Exponer diagnóstico de miembros",
+          "description": "Si está activado, el grupo expone atributos compactos con el estado de cada miembro y los brillos recordados para diagnóstico."
         },
         "debounce_enabled": {
           "name": "Activar el debounce del estado optimista",
@@ -131,6 +149,16 @@
           "name": "Luces",
           "description": "Nueva lista ordenada de entidades de luz del grupo."
         }
+      }
+    }
+  },
+  "selector": {
+    "brightness_strategy": {
+      "options": {
+        "average": "Promedio",
+        "median": "Mediana",
+        "max": "Máximo",
+        "min": "Mínimo"
       }
     }
   },

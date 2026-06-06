@@ -48,6 +48,28 @@ set_options:
       example: false
       selector:
         boolean:
+    brightness_strategy:
+      name: Representative brightness
+      description: >-
+        How the group brightness is calculated from lights that are on. Average is
+        the default.
+      example: average
+      selector:
+        select:
+          translation_key: brightness_strategy
+          options:
+            - average
+            - median
+            - max
+            - min
+    member_diagnostics:
+      name: Expose member diagnostics
+      description: >-
+        If enabled, the group exposes compact per-member state and remembered
+        brightness attributes for troubleshooting.
+      example: false
+      selector:
+        boolean:
     debounce_enabled:
       name: Enable optimistic state debounce
       description: >-

@@ -11,13 +11,21 @@
           "hide_members": "Hide members",
           "remember_on_state": "Remember on/off state",
           "restore_individual_brightness": "Restore individual brightness",
-          "remember_brightness": "Maintain relative brightness"
+          "remember_brightness": "Maintain relative brightness",
+          "brightness_strategy": "Representative brightness",
+          "member_diagnostics": "Expose member diagnostics",
+          "debounce_enabled": "Enable optimistic state debounce",
+          "debounce_time": "Debounce time"
         },
         "data_description": {
           "all": "If enabled, the group is considered on only when all members are on. If disabled, the group is on when any member is on.",
           "remember_on_state": "If enabled, when the group is turned off and on again, only the lights that were previously on will turn on.",
           "restore_individual_brightness": "If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off. Lights without a stored brightness (for example on/off-only) turn on as usual. If you turn the group on with an explicit brightness, that value is used for all targets instead.",
-          "remember_brightness": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group."
+          "remember_brightness": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group.",
+          "brightness_strategy": "How the group brightness is calculated from the lights that are on. Average is the default.",
+          "member_diagnostics": "If enabled, the group exposes compact per-member state and remembered brightness attributes for troubleshooting.",
+          "debounce_enabled": "If enabled, the group ignores state updates from members for a short period after a command is sent, preventing the UI slider from jumping.",
+          "debounce_time": "The amount of time in milliseconds to ignore member state updates."
         }
       }
     },
@@ -28,7 +36,8 @@
       "unknown_entity": "{entity_id} does not exist.",
       "nested_relative_group": "{entity_id} belongs to another Relative Light Group; nesting is not supported.",
       "empty_group": "The group must contain at least one light.",
-      "invalid_entities": "One or more selected entities are invalid."
+      "invalid_entities": "One or more selected entities are invalid.",
+      "invalid_brightness_strategy": "The selected brightness strategy is invalid."
     }
   },
   "options": {
@@ -40,13 +49,21 @@
           "hide_members": "Hide members",
           "remember_on_state": "Remember on/off state",
           "restore_individual_brightness": "Restore individual brightness",
-          "remember_brightness": "Maintain relative brightness"
+          "remember_brightness": "Maintain relative brightness",
+          "brightness_strategy": "Representative brightness",
+          "member_diagnostics": "Expose member diagnostics",
+          "debounce_enabled": "Enable optimistic state debounce",
+          "debounce_time": "Debounce time"
         },
         "data_description": {
           "all": "If enabled, the group is considered on only when all members are on. If disabled, the group is on when any member is on.",
           "remember_on_state": "If enabled, when the group is turned off and on again, only the lights that were previously on will turn on.",
           "restore_individual_brightness": "If enabled, when you turn the group off and on again from the group entity, each light that turns on is set to the brightness it had before the group was turned off. Lights without a stored brightness (for example on/off-only) turn on as usual. If you turn the group on with an explicit brightness, that value is used for all targets instead.",
-          "remember_brightness": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group."
+          "remember_brightness": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness. Individual brightness can only be changed directly on each light, not from the group.",
+          "brightness_strategy": "How the group brightness is calculated from the lights that are on. Average is the default.",
+          "member_diagnostics": "If enabled, the group exposes compact per-member state and remembered brightness attributes for troubleshooting.",
+          "debounce_enabled": "If enabled, the group ignores state updates from members for a short period after a command is sent, preventing the UI slider from jumping.",
+          "debounce_time": "The amount of time in milliseconds to ignore member state updates."
         }
       }
     },
@@ -57,7 +74,8 @@
       "unknown_entity": "{entity_id} does not exist.",
       "nested_relative_group": "{entity_id} belongs to another Relative Light Group; nesting is not supported.",
       "empty_group": "The group must contain at least one light.",
-      "invalid_entities": "One or more selected entities are invalid."
+      "invalid_entities": "One or more selected entities are invalid.",
+      "invalid_brightness_strategy": "The selected brightness strategy is invalid."
     }
   },
   "services": {
@@ -84,6 +102,14 @@
         "remember_brightness": {
           "name": "Maintain relative brightness",
           "description": "If enabled, the group keeps brightness ratios between lights. Proportions are preserved even when the group reaches minimum or maximum brightness."
+        },
+        "brightness_strategy": {
+          "name": "Representative brightness",
+          "description": "How the group brightness is calculated from lights that are on. Average is the default."
+        },
+        "member_diagnostics": {
+          "name": "Expose member diagnostics",
+          "description": "If enabled, the group exposes compact per-member state and remembered brightness attributes for troubleshooting."
         },
         "debounce_enabled": {
           "name": "Enable optimistic state debounce",
@@ -123,6 +149,16 @@
           "name": "Lights",
           "description": "New ordered list of light entities for the group."
         }
+      }
+    }
+  },
+  "selector": {
+    "brightness_strategy": {
+      "options": {
+        "average": "Average",
+        "median": "Median",
+        "max": "Maximum",
+        "min": "Minimum"
       }
     }
   },

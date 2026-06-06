@@ -11,13 +11,21 @@
           "hide_members": "Masquer les membres",
           "remember_on_state": "Mémoriser l'état allumé/éteint",
           "restore_individual_brightness": "Restaurer la luminosité individuelle",
-          "remember_brightness": "Maintenir la luminosité relative"
+          "remember_brightness": "Maintenir la luminosité relative",
+          "brightness_strategy": "Luminosité représentative",
+          "member_diagnostics": "Exposer le diagnostic des membres",
+          "debounce_enabled": "Activer l'anti-rebond d'état optimiste",
+          "debounce_time": "Temps d'anti-rebond"
         },
         "data_description": {
           "all": "Si activé, le groupe est considéré comme allumé uniquement lorsque tous les membres sont allumés. Si désactivé, le groupe est allumé lorsqu'un membre quelconque est allumé.",
           "remember_on_state": "Si activé, lorsque le groupe est éteint puis rallumé, seules les lumières précédemment allumées seront rallumées.",
           "restore_individual_brightness": "Si activé, lorsque vous éteignez puis rallumez le groupe depuis l'entité du groupe, chaque lumière qui s'allume retrouve la luminosité qu'elle avait avant l'extinction du groupe. Les lumières sans luminosité enregistrée (par exemple marche/arrêt uniquement) s'allument comme d'habitude. Si vous rallumez le groupe avec une luminosité explicite, cette valeur est appliquée à toutes les cibles.",
-          "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
+          "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe.",
+          "brightness_strategy": "Définit comment la luminosité du groupe est calculée à partir des lumières allumées. La moyenne est la valeur par défaut.",
+          "member_diagnostics": "Si activé, le groupe expose des attributs compacts avec l'état des membres et les luminosités mémorisées pour le diagnostic.",
+          "debounce_enabled": "Si activé, le groupe ignore les mises à jour d'état des membres pendant un court délai après l'envoi d'une commande, ce qui empêche le curseur de l'interface de sauter.",
+          "debounce_time": "Nombre de millisecondes pendant lesquelles les mises à jour d'état des membres sont ignorées."
         }
       }
     },
@@ -28,7 +36,8 @@
       "unknown_entity": "{entity_id} n'existe pas.",
       "nested_relative_group": "{entity_id} appartient à un autre Groupe de lumières relatif ; l'imbrication n'est pas prise en charge.",
       "empty_group": "Le groupe doit contenir au moins une lumière.",
-      "invalid_entities": "Une ou plusieurs entités sélectionnées sont invalides."
+      "invalid_entities": "Une ou plusieurs entités sélectionnées sont invalides.",
+      "invalid_brightness_strategy": "La stratégie de luminosité sélectionnée est invalide."
     }
   },
   "options": {
@@ -40,13 +49,21 @@
           "hide_members": "Masquer les membres",
           "remember_on_state": "Mémoriser l'état allumé/éteint",
           "restore_individual_brightness": "Restaurer la luminosité individuelle",
-          "remember_brightness": "Maintenir la luminosité relative"
+          "remember_brightness": "Maintenir la luminosité relative",
+          "brightness_strategy": "Luminosité représentative",
+          "member_diagnostics": "Exposer le diagnostic des membres",
+          "debounce_enabled": "Activer l'anti-rebond d'état optimiste",
+          "debounce_time": "Temps d'anti-rebond"
         },
         "data_description": {
           "all": "Si activé, le groupe est considéré comme allumé uniquement lorsque tous les membres sont allumés. Si désactivé, le groupe est allumé lorsqu'un membre quelconque est allumé.",
           "remember_on_state": "Si activé, lorsque le groupe est éteint puis rallumé, seules les lumières précédemment allumées seront rallumées.",
           "restore_individual_brightness": "Si activé, lorsque vous éteignez puis rallumez le groupe depuis l'entité du groupe, chaque lumière qui s'allume retrouve la luminosité qu'elle avait avant l'extinction du groupe. Les lumières sans luminosité enregistrée (par exemple marche/arrêt uniquement) s'allument comme d'habitude. Si vous rallumez le groupe avec une luminosité explicite, cette valeur est appliquée à toutes les cibles.",
-          "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe."
+          "remember_brightness": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale. La luminosité individuelle ne peut être modifiée que directement sur chaque lumière, pas depuis le groupe.",
+          "brightness_strategy": "Définit comment la luminosité du groupe est calculée à partir des lumières allumées. La moyenne est la valeur par défaut.",
+          "member_diagnostics": "Si activé, le groupe expose des attributs compacts avec l'état des membres et les luminosités mémorisées pour le diagnostic.",
+          "debounce_enabled": "Si activé, le groupe ignore les mises à jour d'état des membres pendant un court délai après l'envoi d'une commande, ce qui empêche le curseur de l'interface de sauter.",
+          "debounce_time": "Nombre de millisecondes pendant lesquelles les mises à jour d'état des membres sont ignorées."
         }
       }
     },
@@ -57,7 +74,8 @@
       "unknown_entity": "{entity_id} n'existe pas.",
       "nested_relative_group": "{entity_id} appartient à un autre Groupe de lumières relatif ; l'imbrication n'est pas prise en charge.",
       "empty_group": "Le groupe doit contenir au moins une lumière.",
-      "invalid_entities": "Une ou plusieurs entités sélectionnées sont invalides."
+      "invalid_entities": "Une ou plusieurs entités sélectionnées sont invalides.",
+      "invalid_brightness_strategy": "La stratégie de luminosité sélectionnée est invalide."
     }
   },
   "services": {
@@ -84,6 +102,14 @@
         "remember_brightness": {
           "name": "Maintenir la luminosité relative",
           "description": "Si activé, le groupe conserve les proportions de luminosité entre les lumières. Elles sont préservées même lorsque le groupe atteint la luminosité minimale ou maximale."
+        },
+        "brightness_strategy": {
+          "name": "Luminosité représentative",
+          "description": "Définit comment la luminosité du groupe est calculée à partir des lumières allumées. La moyenne est la valeur par défaut."
+        },
+        "member_diagnostics": {
+          "name": "Exposer le diagnostic des membres",
+          "description": "Si activé, le groupe expose des attributs compacts avec l'état des membres et les luminosités mémorisées pour le diagnostic."
         },
         "debounce_enabled": {
           "name": "Activer l'anti-rebond d'état optimiste",
@@ -123,6 +149,16 @@
           "name": "Lumières",
           "description": "Nouvelle liste ordonnée d'entités lumineuses pour le groupe."
         }
+      }
+    }
+  },
+  "selector": {
+    "brightness_strategy": {
+      "options": {
+        "average": "Moyenne",
+        "median": "Médiane",
+        "max": "Maximum",
+        "min": "Minimum"
       }
     }
   },

@@ -11,13 +11,21 @@
           "hide_members": "Mitglieder ausblenden",
           "remember_on_state": "Ein/Aus-Zustand merken",
           "restore_individual_brightness": "Individuelle Helligkeit wiederherstellen",
-          "remember_brightness": "Relative Helligkeit beibehalten"
+          "remember_brightness": "Relative Helligkeit beibehalten",
+          "brightness_strategy": "Repräsentative Helligkeit",
+          "member_diagnostics": "Mitgliedsdiagnose anzeigen",
+          "debounce_enabled": "Optimistisches Status-Debouncing aktivieren",
+          "debounce_time": "Debounce-Zeit"
         },
         "data_description": {
           "all": "Wenn aktiviert, gilt die Gruppe nur als eingeschaltet, wenn alle Mitglieder eingeschaltet sind. Wenn deaktiviert, ist die Gruppe eingeschaltet, wenn ein beliebiges Mitglied eingeschaltet ist.",
           "remember_on_state": "Wenn aktiviert, werden beim erneuten Einschalten der Gruppe nur die Lichter eingeschaltet, die zuvor eingeschaltet waren.",
           "restore_individual_brightness": "Wenn aktiviert, erhalten die Lichter beim erneuten Einschalten der Gruppe über die Gruppen-Entität wieder die Helligkeit, die sie vor dem Ausschalten der Gruppe hatten. Lichter ohne gespeicherte Helligkeit (z. B. nur Ein/Aus) schalten sich wie gewohnt ein. Wenn die Gruppe mit einer expliziten Helligkeit eingeschaltet wird, gilt dieser Wert für alle Ziele.",
-          "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
+          "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe.",
+          "brightness_strategy": "Legt fest, wie die Gruppenhelligkeit aus den eingeschalteten Lichtern berechnet wird. Durchschnitt ist die Standardeinstellung.",
+          "member_diagnostics": "Wenn aktiviert, zeigt die Gruppe kompakte Attribute mit Mitgliedszuständen und gespeicherten Helligkeiten zur Diagnose an.",
+          "debounce_enabled": "Wenn aktiviert, ignoriert die Gruppe Statusaktualisierungen der Mitglieder für einen kurzen Zeitraum nach einem Befehl, damit der UI-Schieberegler nicht springt.",
+          "debounce_time": "Millisekunden, in denen Statusaktualisierungen der Mitglieder ignoriert werden."
         }
       }
     },
@@ -28,7 +36,8 @@
       "unknown_entity": "{entity_id} existiert nicht.",
       "nested_relative_group": "{entity_id} gehört zu einer anderen Relativen Lichtgruppe; Verschachtelung wird nicht unterstützt.",
       "empty_group": "Die Gruppe muss mindestens ein Licht enthalten.",
-      "invalid_entities": "Eine oder mehrere ausgewählte Entitäten sind ungültig."
+      "invalid_entities": "Eine oder mehrere ausgewählte Entitäten sind ungültig.",
+      "invalid_brightness_strategy": "Die ausgewählte Helligkeitsstrategie ist ungültig."
     }
   },
   "options": {
@@ -40,13 +49,21 @@
           "hide_members": "Mitglieder ausblenden",
           "remember_on_state": "Ein/Aus-Zustand merken",
           "restore_individual_brightness": "Individuelle Helligkeit wiederherstellen",
-          "remember_brightness": "Relative Helligkeit beibehalten"
+          "remember_brightness": "Relative Helligkeit beibehalten",
+          "brightness_strategy": "Repräsentative Helligkeit",
+          "member_diagnostics": "Mitgliedsdiagnose anzeigen",
+          "debounce_enabled": "Optimistisches Status-Debouncing aktivieren",
+          "debounce_time": "Debounce-Zeit"
         },
         "data_description": {
           "all": "Wenn aktiviert, gilt die Gruppe nur als eingeschaltet, wenn alle Mitglieder eingeschaltet sind. Wenn deaktiviert, ist die Gruppe eingeschaltet, wenn ein beliebiges Mitglied eingeschaltet ist.",
           "remember_on_state": "Wenn aktiviert, werden beim erneuten Einschalten der Gruppe nur die Lichter eingeschaltet, die zuvor eingeschaltet waren.",
           "restore_individual_brightness": "Wenn aktiviert, erhalten die Lichter beim erneuten Einschalten der Gruppe über die Gruppen-Entität wieder die Helligkeit, die sie vor dem Ausschalten der Gruppe hatten. Lichter ohne gespeicherte Helligkeit (z. B. nur Ein/Aus) schalten sich wie gewohnt ein. Wenn die Gruppe mit einer expliziten Helligkeit eingeschaltet wird, gilt dieser Wert für alle Ziele.",
-          "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe."
+          "remember_brightness": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Die Verhältnisse bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht. Die individuelle Helligkeit kann nur direkt an jedem Licht geändert werden, nicht über die Gruppe.",
+          "brightness_strategy": "Legt fest, wie die Gruppenhelligkeit aus den eingeschalteten Lichtern berechnet wird. Durchschnitt ist die Standardeinstellung.",
+          "member_diagnostics": "Wenn aktiviert, zeigt die Gruppe kompakte Attribute mit Mitgliedszuständen und gespeicherten Helligkeiten zur Diagnose an.",
+          "debounce_enabled": "Wenn aktiviert, ignoriert die Gruppe Statusaktualisierungen der Mitglieder für einen kurzen Zeitraum nach einem Befehl, damit der UI-Schieberegler nicht springt.",
+          "debounce_time": "Millisekunden, in denen Statusaktualisierungen der Mitglieder ignoriert werden."
         }
       }
     },
@@ -57,7 +74,8 @@
       "unknown_entity": "{entity_id} existiert nicht.",
       "nested_relative_group": "{entity_id} gehört zu einer anderen Relativen Lichtgruppe; Verschachtelung wird nicht unterstützt.",
       "empty_group": "Die Gruppe muss mindestens ein Licht enthalten.",
-      "invalid_entities": "Eine oder mehrere ausgewählte Entitäten sind ungültig."
+      "invalid_entities": "Eine oder mehrere ausgewählte Entitäten sind ungültig.",
+      "invalid_brightness_strategy": "Die ausgewählte Helligkeitsstrategie ist ungültig."
     }
   },
   "services": {
@@ -84,6 +102,14 @@
         "remember_brightness": {
           "name": "Relative Helligkeit beibehalten",
           "description": "Wenn aktiviert, behält die Gruppe die Helligkeitsverhältnisse zwischen den Lichtern bei. Sie bleiben erhalten, auch wenn die Gruppe minimale oder maximale Helligkeit erreicht."
+        },
+        "brightness_strategy": {
+          "name": "Repräsentative Helligkeit",
+          "description": "Legt fest, wie die Gruppenhelligkeit aus eingeschalteten Lichtern berechnet wird. Durchschnitt ist die Standardeinstellung."
+        },
+        "member_diagnostics": {
+          "name": "Mitgliedsdiagnose anzeigen",
+          "description": "Wenn aktiviert, zeigt die Gruppe kompakte Attribute mit Mitgliedszuständen und gespeicherten Helligkeiten zur Diagnose an."
         },
         "debounce_enabled": {
           "name": "Optimistisches Status-Debouncing aktivieren",
@@ -123,6 +149,16 @@
           "name": "Lichter",
           "description": "Neue geordnete Liste von Licht-Entitäten für die Gruppe."
         }
+      }
+    }
+  },
+  "selector": {
+    "brightness_strategy": {
+      "options": {
+        "average": "Durchschnitt",
+        "median": "Median",
+        "max": "Maximum",
+        "min": "Minimum"
       }
     }
   },

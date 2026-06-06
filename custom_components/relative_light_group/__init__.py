@@ -5,12 +5,12 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ENTITIES, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 
 from . import config_flow as config_flow_pre_import  # noqa: F401
 from .const import CONF_HIDE_MEMBERS, DOMAIN
 from .services import async_register_services
+from .visibility import restore_member_visibility_if_hidden_by_integration
 
 
 PLATFORMS = [Platform.LIGHT]
@@ -37,17 +37,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Remove a config entry."""
     # Unhide the group members
-    registry = er.async_get(hass)
-
     if not entry.options.get(CONF_HIDE_MEMBERS, False):
         return
 
-    for member in entry.options.get(CONF_ENTITIES, []):
-        if not (entity_id := er.async_resolve_entity_id(registry, member)):
-            continue
-        if (entity_entry := registry.async_get(entity_id)) is None:
-            continue
-        if entity_entry.hidden_by != er.RegistryEntryHider.INTEGRATION:
-            continue
-
-        registry.async_update_entity(entity_id, hidden_by=None)
+    restore_member_visibility_if_hidden_by_integration(
+        hass, list(entry.options.get(CONF_ENTITIES, []))
+    )

@@ -11,13 +11,21 @@
           "hide_members": "Nascondi membri",
           "remember_on_state": "Ricorda stato acceso/spento",
           "restore_individual_brightness": "Ripristina luminosità individuale",
-          "remember_brightness": "Mantieni luminosità relativa"
+          "remember_brightness": "Mantieni luminosità relativa",
+          "brightness_strategy": "Luminosità rappresentativa",
+          "member_diagnostics": "Esponi diagnostica membri",
+          "debounce_enabled": "Abilita debounce stato ottimistico",
+          "debounce_time": "Tempo di debounce"
         },
         "data_description": {
           "all": "Se abilitato, il gruppo è considerato acceso solo quando tutti i membri sono accesi. Se disabilitato, il gruppo è acceso quando un qualsiasi membro è acceso.",
           "remember_on_state": "Se abilitato, quando il gruppo viene spento e riacceso, si accenderanno solo le luci che erano precedentemente accese.",
           "restore_individual_brightness": "Se abilitato, spegnendo e riaccendendo il gruppo dall'entità del gruppo, ogni luce che si accende torna alla luminosità che aveva prima che il gruppo venisse spento. Le luci senza luminosità memorizzata (ad esempio solo on/off) si accendono come al solito. Se riaccendi il gruppo con una luminosità esplicita, quel valore viene applicato a tutte le destinazioni.",
-          "remember_brightness": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Restano tali anche quando il gruppo raggiunge la luminosità minima o massima. La luminosità individuale può essere modificata solo direttamente su ogni luce, non dal gruppo."
+          "remember_brightness": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Restano tali anche quando il gruppo raggiunge la luminosità minima o massima. La luminosità individuale può essere modificata solo direttamente su ogni luce, non dal gruppo.",
+          "brightness_strategy": "Definisce come viene calcolata la luminosità del gruppo dalle luci accese. La media è il valore predefinito.",
+          "member_diagnostics": "Se abilitato, il gruppo espone attributi compatti con lo stato dei membri e le luminosità memorizzate per la diagnostica.",
+          "debounce_enabled": "Se abilitato, il gruppo ignora gli aggiornamenti di stato dei membri per un breve periodo dopo aver inviato un comando, evitando che lo slider della UI salti.",
+          "debounce_time": "Numero di millisecondi durante i quali ignorare gli aggiornamenti di stato dei membri."
         }
       }
     },
@@ -28,7 +36,8 @@
       "unknown_entity": "{entity_id} non esiste.",
       "nested_relative_group": "{entity_id} appartiene a un altro Gruppo Luci Relativo; l'annidamento non è supportato.",
       "empty_group": "Il gruppo deve contenere almeno una luce.",
-      "invalid_entities": "Una o più entità selezionate non sono valide."
+      "invalid_entities": "Una o più entità selezionate non sono valide.",
+      "invalid_brightness_strategy": "La strategia di luminosità selezionata non è valida."
     }
   },
   "options": {
@@ -40,13 +49,21 @@
           "hide_members": "Nascondi membri",
           "remember_on_state": "Ricorda stato acceso/spento",
           "restore_individual_brightness": "Ripristina luminosità individuale",
-          "remember_brightness": "Mantieni luminosità relativa"
+          "remember_brightness": "Mantieni luminosità relativa",
+          "brightness_strategy": "Luminosità rappresentativa",
+          "member_diagnostics": "Esponi diagnostica membri",
+          "debounce_enabled": "Abilita debounce stato ottimistico",
+          "debounce_time": "Tempo di debounce"
         },
         "data_description": {
           "all": "Se abilitato, il gruppo è considerato acceso solo quando tutti i membri sono accesi. Se disabilitato, il gruppo è acceso quando un qualsiasi membro è acceso.",
           "remember_on_state": "Se abilitato, quando il gruppo viene spento e riacceso, si accenderanno solo le luci che erano precedentemente accese.",
           "restore_individual_brightness": "Se abilitato, spegnendo e riaccendendo il gruppo dall'entità del gruppo, ogni luce che si accende torna alla luminosità che aveva prima che il gruppo venisse spento. Le luci senza luminosità memorizzata (ad esempio solo on/off) si accendono come al solito. Se riaccendi il gruppo con una luminosità esplicita, quel valore viene applicato a tutte le destinazioni.",
-          "remember_brightness": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Restano tali anche quando il gruppo raggiunge la luminosità minima o massima. La luminosità individuale può essere modificata solo direttamente su ogni luce, non dal gruppo."
+          "remember_brightness": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Restano tali anche quando il gruppo raggiunge la luminosità minima o massima. La luminosità individuale può essere modificata solo direttamente su ogni luce, non dal gruppo.",
+          "brightness_strategy": "Definisce come viene calcolata la luminosità del gruppo dalle luci accese. La media è il valore predefinito.",
+          "member_diagnostics": "Se abilitato, il gruppo espone attributi compatti con lo stato dei membri e le luminosità memorizzate per la diagnostica.",
+          "debounce_enabled": "Se abilitato, il gruppo ignora gli aggiornamenti di stato dei membri per un breve periodo dopo aver inviato un comando, evitando che lo slider della UI salti.",
+          "debounce_time": "Numero di millisecondi durante i quali ignorare gli aggiornamenti di stato dei membri."
         }
       }
     },
@@ -57,7 +74,8 @@
       "unknown_entity": "{entity_id} non esiste.",
       "nested_relative_group": "{entity_id} appartiene a un altro Gruppo Luci Relativo; l'annidamento non è supportato.",
       "empty_group": "Il gruppo deve contenere almeno una luce.",
-      "invalid_entities": "Una o più entità selezionate non sono valide."
+      "invalid_entities": "Una o più entità selezionate non sono valide.",
+      "invalid_brightness_strategy": "La strategia di luminosità selezionata non è valida."
     }
   },
   "services": {
@@ -84,6 +102,14 @@
         "remember_brightness": {
           "name": "Mantieni luminosità relativa",
           "description": "Se abilitato, il gruppo mantiene le proporzioni di luminosità tra le luci. Vengono mantenute anche al raggiungimento della luminosità minima o massima."
+        },
+        "brightness_strategy": {
+          "name": "Luminosità rappresentativa",
+          "description": "Definisce come viene calcolata la luminosità del gruppo dalle luci accese. La media è il valore predefinito."
+        },
+        "member_diagnostics": {
+          "name": "Esponi diagnostica membri",
+          "description": "Se abilitato, il gruppo espone attributi compatti con lo stato dei membri e le luminosità memorizzate per la diagnostica."
         },
         "debounce_enabled": {
           "name": "Abilita debounce stato ottimistico",
@@ -123,6 +149,16 @@
           "name": "Luci",
           "description": "Nuovo elenco ordinato di entità luce per il gruppo."
         }
+      }
+    }
+  },
+  "selector": {
+    "brightness_strategy": {
+      "options": {
+        "average": "Media",
+        "median": "Mediana",
+        "max": "Massimo",
+        "min": "Minimo"
       }
     }
   },
